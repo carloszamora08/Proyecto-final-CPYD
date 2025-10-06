@@ -11,6 +11,8 @@ class ITeamDelegate {
     virtual ~ITeamDelegate() = default;
     virtual std::shared_ptr<domain::Team> GetTeam(std::string_view id) = 0;
     virtual std::vector<std::shared_ptr<domain::Team>> GetAllTeams() = 0;
+    virtual std::string UpdateTeam(std::string_view id, std::shared_ptr<domain::Team> team) = 0;
+    virtual void DeleteTeam(std::string_view id) = 0;
     virtual std::string_view SaveTeam(const domain::Team& team) = 0;
 };
 

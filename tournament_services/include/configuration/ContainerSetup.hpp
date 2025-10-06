@@ -61,9 +61,7 @@ namespace config {
         builder.registerType<TournamentRepository>().as<IRepository<domain::Tournament, std::string> >().
                 singleInstance();
 
-        builder.registerType<TournamentDelegate>()
-                .as<ITournamentDelegate>()
-                .singleInstance();
+        builder.registerType<TournamentDelegate>().as<ITournamentDelegate>().singleInstance();
         builder.registerType<TournamentController>().singleInstance();
 
         builder.registerType<GroupDelegate>().as<IGroupDelegate>().singleInstance();

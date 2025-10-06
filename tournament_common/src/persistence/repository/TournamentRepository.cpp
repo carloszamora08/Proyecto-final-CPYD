@@ -1,6 +1,7 @@
 //
 // Created by tsuny on 9/1/25.
 //
+#include <iostream>
 #include <memory>
 #include <string>
 #include <nlohmann/json.hpp>
@@ -16,7 +17,6 @@ TournamentRepository::TournamentRepository(std::shared_ptr<IDbConnectionProvider
 std::shared_ptr<domain::Tournament> TournamentRepository::ReadById(std::string id) {
     auto pooled = connectionProvider->Connection();
     const auto connection = dynamic_cast<PostgresConnection*>(&*pooled);
-
 
     pqxx::work tx(*(connection->connection));
     const pqxx::result result = tx.exec(pqxx::prepped{"select_tournament_by_id"}, id);
@@ -46,12 +46,27 @@ std::string TournamentRepository::Create (const domain::Tournament & entity) {
     return result[0]["id"].c_str();
 }
 
-std::string TournamentRepository::Update (const domain::Tournament & entity) {
-    return "id";
+std::string TournamentRepository::Update (std::string id, const domain::Tournament & entity) {
+    const nlohmann::json tournamentDoc = entity;
+
+    auto pooled = connectionProvider->Connection();
+    const auto connection = dynamic_cast<PostgresConnection*>(&*pooled);
+
+    pqxx::work tx(*(connection->connection));
+    const pqxx::result result = tx.exec_prepared("update_tournament_by_id", id, tournamentDoc.dump());
+
+    tx.commit();
+
+    return result[0]["id"].c_str();
 }
 
 void TournamentRepository::Delete(std::string id) {
-
+    auto pooled = connectionProvider->Connection();
+    const auto connection = dynamic_cast<PostgresConnection*>(&*pooled);
+    
+    pqxx::work tx(*(connection->connection));
+    tx.exec(pqxx::prepped{"delete_tournament_by_id"}, id);
+    tx.commit();
 }
 
 std::vector<std::shared_ptr<domain::Tournament>> TournamentRepository::ReadAll() {

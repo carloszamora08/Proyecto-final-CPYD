@@ -24,7 +24,7 @@ std::string GroupRepository::Create (const domain::Group & entity) {
     return result[0]["id"].c_str();
 }
 
-std::string GroupRepository::Update (const domain::Group & entity) {
+std::string GroupRepository::Update (std::string id, const domain::Group & entity) {
     auto pooled = connectionProvider->Connection();
     auto connection = dynamic_cast<PostgresConnection*>(&*pooled);
     nlohmann::json groupBody = entity;

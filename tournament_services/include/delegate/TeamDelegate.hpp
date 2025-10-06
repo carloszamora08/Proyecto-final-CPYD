@@ -16,6 +16,8 @@ class TeamDelegate : public ITeamDelegate {
     explicit TeamDelegate(std::shared_ptr<IRepository<domain::Team, std::string_view>> repository);
     std::shared_ptr<domain::Team> GetTeam(std::string_view id) override;
     std::vector<std::shared_ptr<domain::Team>> GetAllTeams() override;
+    std::string UpdateTeam(std::string_view id, std::shared_ptr<domain::Team> team) override;
+    void DeleteTeam(std::string_view id) override;
     std::string_view SaveTeam( const domain::Team& team) override;
 };
 

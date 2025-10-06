@@ -65,13 +65,28 @@ public:
         return result[0]["id"].c_str();
     }
 
-    std::string_view Update(const domain::Team &entity) override {
-        return "newID";
+    std::string_view Update(std::string_view id, const domain::Team & entity) override {
+        const nlohmann::json teamDoc = entity;
+
+        auto pooled = connectionProvider->Connection();
+        const auto connection = dynamic_cast<PostgresConnection*>(&*pooled);
+
+        pqxx::work tx(*(connection->connection));
+        const pqxx::result result = tx.exec_prepared("update_team_by_id", id, teamDoc.dump());
+
+        tx.commit();
+
+        return result[0]["id"].c_str();
     }
 
 
     void Delete(std::string_view id) override{
+        auto pooled = connectionProvider->Connection();
+        const auto connection = dynamic_cast<PostgresConnection*>(&*pooled);
         
+        pqxx::work tx(*(connection->connection));
+        tx.exec(pqxx::prepped{"delete_team_by_id"}, std::string{id});
+        tx.commit();
     }
 };
 
