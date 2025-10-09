@@ -43,8 +43,13 @@ crow::response TeamController::UpdateTeam(const crow::request &request, const st
     const std::shared_ptr<domain::Team> team = std::make_shared<domain::Team>(body);
 
     const std::string id = teamDelegate->UpdateTeam(teamId, team);
+
+    if(id.empty()) {
+        return crow::response{crow::NOT_FOUND, "team not found"};
+    }
+
     crow::response response;
-    response.code = crow::OK;
+    response.code = crow::NO_CONTENT;
     response.add_header("location", id);
     return response;
 }
@@ -69,12 +74,22 @@ crow::response TeamController::SaveTeam(const crow::request& request) const {
         response.code = crow::BAD_REQUEST;
         return response;
     }
-    auto requestBody = nlohmann::json::parse(request.body);
-    domain::Team team = requestBody;
 
-    auto createdId = teamDelegate->SaveTeam(team);
-    response.code = crow::CREATED;
-    response.add_header("location", createdId.data());
+    try {
+        auto requestBody = nlohmann::json::parse(request.body);
+        domain::Team team = requestBody;
+
+        auto createdId = teamDelegate->SaveTeam(team);
+        response.code = crow::CREATED;
+        response.add_header("location", createdId.data());
+
+    } catch (const std::runtime_error& e) {
+        response.code = crow::CONFLICT;
+        response.body = "Team already exists or database constraint violation";
+    } catch (const std::exception& e) {
+        response.code = crow::INTERNAL_SERVER_ERROR;
+        response.body = "Internal server error";
+    }
 
     return response;
 }
