@@ -10,6 +10,8 @@ class TeamDelegateMock : public ITeamDelegate {
     public:
     MOCK_METHOD(std::shared_ptr<domain::Team>, GetTeam, (const std::string_view id), (override));
     MOCK_METHOD(std::vector<std::shared_ptr<domain::Team>>, GetAllTeams, (), (override));
+    MOCK_METHOD(std::string, UpdateTeam, (std::string_view id, std::shared_ptr<domain::Team> team), (override));
+    MOCK_METHOD(void, DeleteTeam, (std::string_view id), (override));
     MOCK_METHOD(std::string_view, SaveTeam, (const domain::Team&), (override));
 };
 
