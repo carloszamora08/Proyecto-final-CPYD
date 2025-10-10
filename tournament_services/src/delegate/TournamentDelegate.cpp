@@ -30,7 +30,7 @@ std::shared_ptr<domain::Tournament> TournamentDelegate::GetTournament(std::strin
     return tournamentRepository->ReadById(id.data());
 }
 
-std::vector<std::shared_ptr<domain::Tournament> > TournamentDelegate::ReadAll() {
+std::vector<std::shared_ptr<domain::Tournament>> TournamentDelegate::ReadAll() {
     return tournamentRepository->ReadAll();
 }
 
