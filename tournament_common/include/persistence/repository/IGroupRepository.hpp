@@ -5,11 +5,12 @@
 #ifndef COMMON_IGROUPREPOSITORY_HPP
 #define COMMON_IGROUPREPOSITORY_HPP
 
+#include <expected>
+
 #include "domain/Group.hpp"
 #include "IRepository.hpp"
 
-
-class IGroupRepository : public IRepository<domain::Group, std::string> {
+class IGroupRepository : public IRepository<domain::Group, std::string, std::expected<std::string, std::string>> {
 public:
     virtual std::vector<std::shared_ptr<domain::Group>> FindByTournamentId(const std::string_view& tournamentId) = 0;
     virtual std::shared_ptr<domain::Group> FindByTournamentIdAndGroupId(const std::string_view& tournamentId, const std::string_view& groupId) = 0;

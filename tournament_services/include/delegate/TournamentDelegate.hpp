@@ -12,16 +12,16 @@
 #include "persistence/repository/IRepository.hpp"
 
 class TournamentDelegate : public ITournamentDelegate{
-    std::shared_ptr<IRepository<domain::Tournament, std::string>> tournamentRepository;
+    std::shared_ptr<IRepository<domain::Tournament, std::string, std::expected<std::string, std::string>>> tournamentRepository;
     std::shared_ptr<QueueMessageProducer> producer;
 public:
-    explicit TournamentDelegate(std::shared_ptr<IRepository<domain::Tournament, std::string>> repository, std::shared_ptr<QueueMessageProducer> producer);
+    explicit TournamentDelegate(std::shared_ptr<IRepository<domain::Tournament, std::string, std::expected<std::string, std::string>>> repository, std::shared_ptr<QueueMessageProducer> producer);
 
-    std::string CreateTournament(std::shared_ptr<domain::Tournament> tournament) override;
-    std::shared_ptr<domain::Tournament> GetTournament(std::string_view id) override;
-    std::vector<std::shared_ptr<domain::Tournament>> ReadAll() override;
-    std::string UpdateTournament(std::string_view id, std::shared_ptr<domain::Tournament> tournament) override;
-    void DeleteTournament(std::string_view id) override;
+    std::expected<std::string, std::string> CreateTournament(std::shared_ptr<domain::Tournament> tournament) override;
+    std::expected<std::shared_ptr<domain::Tournament>, std::string> GetTournament(std::string_view id) override;
+    std::expected<std::vector<std::shared_ptr<domain::Tournament>>, std::string> ReadAll() override;
+    std::expected<std::string, std::string> UpdateTournament(std::string_view id, std::shared_ptr<domain::Tournament> tournament) override;
+    std::expected<void, std::string> DeleteTournament(std::string_view id) override;
 };
 
 #endif //TOURNAMENTS_TOURNAMENTDELEGATE_HPP

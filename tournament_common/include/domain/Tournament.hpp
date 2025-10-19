@@ -17,7 +17,7 @@ namespace domain {
         int maxTeamsPerGroup;
         TournamentType type;
     public:
-        TournamentFormat(int numberOfGroups = 1, int maxTeamsPerGroup = 16, TournamentType tournamentType = TournamentType::ROUND_ROBIN) {
+        TournamentFormat(int numberOfGroups = 8, int maxTeamsPerGroup = 4, TournamentType tournamentType = TournamentType::NFL) {
             this->numberOfGroups = numberOfGroups;
             this->maxTeamsPerGroup = maxTeamsPerGroup;
             this->type = tournamentType;
@@ -51,13 +51,15 @@ namespace domain {
     {
         std::string id;
         std::string name;
+        std::string year;
         TournamentFormat format;
         std::vector<Group> groups;
         std::vector<Match> matches;
 
     public:
-        explicit Tournament(const std::string &name = "", const TournamentFormat& format = TournamentFormat()) {
+        explicit Tournament(const std::string &name = "", const std::string &year = "", const TournamentFormat& format = TournamentFormat()) {
             this->name = name;
+            this->year = year;
             this->format = format;
         }
 
@@ -75,6 +77,14 @@ namespace domain {
 
         std::string& Name() {
             return this->name;
+        }
+
+        [[nodiscard]] std::string Year() const {
+            return this->year;
+        }
+
+        std::string& Year() {
+            return this->year;
         }
 
         [[nodiscard]] TournamentFormat Format() const {

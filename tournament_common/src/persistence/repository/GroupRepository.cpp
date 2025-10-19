@@ -7,11 +7,7 @@
 
 GroupRepository::GroupRepository(const std::shared_ptr<IDbConnectionProvider>& connectionProvider) : connectionProvider(std::move(connectionProvider)) {}
 
-std::shared_ptr<domain::Group> GroupRepository::ReadById(std::string id) {
-    return std::make_shared<domain::Group>();
-}
-
-std::string GroupRepository::Create (const domain::Group & entity) {
+std::expected<std::string, std::string> GroupRepository::Create (const domain::Group & entity) {
     auto pooled = connectionProvider->Connection();
     auto connection = dynamic_cast<PostgresConnection*>(&*pooled);
     nlohmann::json groupBody = entity;
@@ -24,24 +20,7 @@ std::string GroupRepository::Create (const domain::Group & entity) {
     return result[0]["id"].c_str();
 }
 
-std::string GroupRepository::Update (std::string id, const domain::Group & entity) {
-    auto pooled = connectionProvider->Connection();
-    auto connection = dynamic_cast<PostgresConnection*>(&*pooled);
-    nlohmann::json groupBody = entity;
-
-    pqxx::work tx(*(connection->connection));
-    pqxx::result result = tx.exec(pqxx::prepped{"update_group"}, pqxx::params{entity.Id(), groupBody.dump()});
-
-    tx.commit();
-
-    return entity.Id();
-}
-
-void GroupRepository::Delete(std::string id) {
-
-}
-
-std::vector<std::shared_ptr<domain::Group>> GroupRepository::ReadAll() {
+std::expected<std::vector<std::shared_ptr<domain::Group>>, std::string> GroupRepository::ReadAll() {
     std::vector<std::shared_ptr<domain::Group>> teams;
 
     auto pooled = connectionProvider->Connection();
@@ -56,6 +35,27 @@ std::vector<std::shared_ptr<domain::Group>> GroupRepository::ReadAll() {
     }
 
     return teams;
+}
+
+std::expected<std::shared_ptr<domain::Group>, std::string> GroupRepository::ReadById(std::string id) {
+    return std::make_shared<domain::Group>();
+}
+
+std::expected<std::string, std::string> GroupRepository::Update (std::string id, const domain::Group & entity) {
+    auto pooled = connectionProvider->Connection();
+    auto connection = dynamic_cast<PostgresConnection*>(&*pooled);
+    nlohmann::json groupBody = entity;
+
+    pqxx::work tx(*(connection->connection));
+    pqxx::result result = tx.exec(pqxx::prepped{"update_group"}, pqxx::params{entity.Id(), groupBody.dump()});
+
+    tx.commit();
+
+    return entity.Id();
+}
+
+std::expected<void, std::string> GroupRepository::Delete(std::string id) {
+
 }
 
 std::vector<std::shared_ptr<domain::Group>> GroupRepository::FindByTournamentId(const std::string_view& tournamentId) {

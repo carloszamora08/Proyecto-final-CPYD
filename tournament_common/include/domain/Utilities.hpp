@@ -75,7 +75,10 @@ namespace domain {
     }
 
     inline void to_json(nlohmann::json& json, const std::shared_ptr<Tournament>& tournament) {
-        json = {{"name", tournament->Name()}};
+        json = {
+            {"name", tournament->Name()},
+            {"year", tournament->Year()}
+        };
         if (!tournament->Id().empty()) {
             json["id"] = tournament->Id();
         }
@@ -87,12 +90,16 @@ namespace domain {
             tournament->Id() = json["id"].get<std::string>();
         }
         json["name"].get_to(tournament->Name());
+        json["year"].get_to(tournament->Year());
         if (json.contains("format"))
             json.at("format").get_to(tournament->Format());
     }
 
     inline void to_json(nlohmann::json& json, const Tournament& tournament) {
-        json = {{"name", tournament.Name()}};
+        json = {
+            {"name", tournament.Name()},
+            {"year", tournament.Year()}
+        };
         if (!tournament.Id().empty()) {
             json["id"] = tournament.Id();
         }
@@ -104,6 +111,7 @@ namespace domain {
             tournament.Id() = json["id"].get<std::string>();
         }
         json["name"].get_to(tournament.Name());
+        json["year"].get_to(tournament.Year());
         if (json.contains("format"))
             json.at("format").get_to(tournament.Format());
     }
