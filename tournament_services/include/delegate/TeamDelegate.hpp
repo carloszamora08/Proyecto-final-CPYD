@@ -11,14 +11,15 @@
 #include "ITeamDelegate.hpp"
 
 class TeamDelegate : public ITeamDelegate {
-    std::shared_ptr<IRepository<domain::Team, std::string_view, std::expected<std::string_view, std::string>>> teamRepository;
-    public:
-    explicit TeamDelegate(std::shared_ptr<IRepository<domain::Team, std::string_view, std::expected<std::string_view, std::string>>> repository);
-    std::shared_ptr<domain::Team> GetTeam(std::string_view id) override;
-    std::vector<std::shared_ptr<domain::Team>> GetAllTeams() override;
-    std::string UpdateTeam(std::string_view id, std::shared_ptr<domain::Team> team) override;
-    void DeleteTeam(std::string_view id) override;
-    std::string_view SaveTeam( const domain::Team& team) override;
+    std::shared_ptr<IRepository<domain::Team, std::string, std::expected<std::string, std::string>>> teamRepository;
+
+public:
+    explicit TeamDelegate(std::shared_ptr<IRepository<domain::Team, std::string, std::expected<std::string, std::string>>> repository);
+    std::expected<std::string, std::string> CreateTeam(std::shared_ptr<domain::Team> team) override;
+    std::expected<std::shared_ptr<domain::Team>, std::string> GetTeam(std::string_view id) override;
+    std::expected<std::vector<std::shared_ptr<domain::Team>>, std::string> ReadAll() override;
+    std::expected<std::string, std::string> UpdateTeam(std::string_view id, std::shared_ptr<domain::Team> team) override;
+    std::expected<void, std::string> DeleteTeam(std::string_view id) override;
 };
 
 
