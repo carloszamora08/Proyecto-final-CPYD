@@ -9,102 +9,89 @@
 #include "controller/TeamController.hpp"
 #include "domain/Utilities.hpp"
 
-TeamController::TeamController(const std::shared_ptr<ITeamDelegate>& teamDelegate)
-    : teamDelegate(teamDelegate) {}
+
+TeamController::TeamController(const std::shared_ptr<ITeamDelegate>& teamDelegate) : teamDelegate(teamDelegate) {}
 
 crow::response TeamController::getTeam(const std::string& teamId) const {
     if(!std::regex_match(teamId, ID_VALUE)) {
-        return {crow::BAD_REQUEST, "Invalid ID format"};
+        return crow::response{crow::BAD_REQUEST, "Invalid ID format"};
     }
 
-    const auto result = teamDelegate->GetTeam(teamId);
-
-    if (!result) {
-        return {crow::NOT_FOUND, result.error()};
+    if(auto team = teamDelegate->GetTeam(teamId); team != nullptr) {
+        nlohmann::json body = team;
+        auto response = crow::response{crow::OK, body.dump()};
+        response.add_header(CONTENT_TYPE_HEADER, JSON_CONTENT_TYPE);
+        return response;
     }
-
-    nlohmann::json body = *result;
-    crow::response response{crow::OK, body.dump()};
-    response.add_header(CONTENT_TYPE_HEADER, JSON_CONTENT_TYPE);
-
-    return response;
+    return crow::response{crow::NOT_FOUND, "team not found"};
 }
 
 crow::response TeamController::getAllTeams() const {
-    const auto result = teamDelegate->ReadAll();
 
-    if (!result) {
-        return {crow::INTERNAL_SERVER_ERROR, result.error()};
-    }
-
-    nlohmann::json body = *result;
-    crow::response response{crow::OK, body.dump()};
+    nlohmann::json body = teamDelegate->GetAllTeams();
+    crow::response response{200, body.dump()};
     response.add_header(CONTENT_TYPE_HEADER, JSON_CONTENT_TYPE);
-
     return response;
 }
 
 crow::response TeamController::UpdateTeam(const crow::request &request, const std::string& teamId) const {
     if(!std::regex_match(teamId, ID_VALUE)) {
-        return {crow::BAD_REQUEST, "Invalid ID format"};
+        return crow::response{crow::BAD_REQUEST, "Invalid ID format"};
     }
 
-    try {
-        nlohmann::json body = nlohmann::json::parse(request.body);
-        const std::shared_ptr<domain::Team> team = std::make_shared<domain::Team>(body);
+    nlohmann::json body = nlohmann::json::parse(request.body);
+    const std::shared_ptr<domain::Team> team = std::make_shared<domain::Team>(body);
 
-        const auto result = teamDelegate->UpdateTeam(teamId, team);
+    const std::string id = teamDelegate->UpdateTeam(teamId, team);
 
-        if (!result) {
-            if (result.error() == "Team not found") {
-                return {crow::NOT_FOUND, result.error()};
-            }
-
-            return {crow::INTERNAL_SERVER_ERROR, result.error()};
-        }
-
-        return crow::response{crow::NO_CONTENT};
-    } catch (const nlohmann::json::exception& e) {
-        return {crow::BAD_REQUEST, "Invalid JSON"};
+    if(id.empty()) {
+        return crow::response{crow::NOT_FOUND, "team not found"};
     }
+
+    crow::response response;
+    response.code = crow::NO_CONTENT;
+    response.add_header("location", id);
+    return response;
 }
 
 crow::response TeamController::DeleteTeam(const std::string& teamId) const {
     if(!std::regex_match(teamId, ID_VALUE)) {
-        return {crow::BAD_REQUEST, "Invalid ID format"};
+        return crow::response{crow::BAD_REQUEST, "Invalid ID format"};
     }
 
-    const auto result = teamDelegate->DeleteTeam(teamId);
+    if(auto team = teamDelegate->GetTeam(teamId); team != nullptr) {
+        teamDelegate->DeleteTeam(teamId);
 
-    if (!result) {
-        if (result.error() == "Team not found") {
-            return {crow::NOT_FOUND, result.error()};
-        }
-
-        return {crow::INTERNAL_SERVER_ERROR, result.error()};
+        return crow::response{crow::OK, "team deleted successfully"};
     }
-
-    return crow::response{crow::NO_CONTENT};
+    return crow::response{crow::NOT_FOUND, "team not found"};
 }
 
 crow::response TeamController::SaveTeam(const crow::request& request) const {
-    try {
-        nlohmann::json body = nlohmann::json::parse(request.body);
-        const std::shared_ptr<domain::Team> team = std::make_shared<domain::Team>(body);
+    crow::response response;
 
-        const auto result = teamDelegate->CreateTeam(team);
-
-        if (!result) {
-            return {crow::CONFLICT, result.error()};
-        }
-
-        crow::response response{crow::CREATED};
-        response.add_header("location", *result);
-
+    if(!nlohmann::json::accept(request.body)) {
+        response.code = crow::BAD_REQUEST;
         return response;
-    } catch (const nlohmann::json::exception& e) {
-        return {crow::BAD_REQUEST, "Invalid JSON"};
     }
+
+    try {
+        auto requestBody = nlohmann::json::parse(request.body);
+        domain::Team team = requestBody;
+
+        auto createdId = teamDelegate->SaveTeam(team);
+        response.code = crow::CREATED;
+        response.add_header("location", createdId.data());
+
+    } catch (const std::runtime_error& e) {
+        response.code = crow::CONFLICT;
+        response.body = "Team already exists or database constraint violation";
+    } catch (const std::exception& e) {
+        response.code = crow::INTERNAL_SERVER_ERROR;
+        response.body = "Internal server error";
+    }
+
+    return response;
 }
 
 REGISTER_ROUTE(TeamController, getTeam, "/teams/<string>", "GET"_method)
