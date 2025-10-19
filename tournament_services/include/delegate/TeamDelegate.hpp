@@ -11,9 +11,9 @@
 #include "ITeamDelegate.hpp"
 
 class TeamDelegate : public ITeamDelegate {
-    std::shared_ptr<IRepository<domain::Team, std::string_view>> teamRepository;
+    std::shared_ptr<IRepository<domain::Team, std::string_view, std::expected<std::string_view, std::string>>> teamRepository;
     public:
-    explicit TeamDelegate(std::shared_ptr<IRepository<domain::Team, std::string_view>> repository);
+    explicit TeamDelegate(std::shared_ptr<IRepository<domain::Team, std::string_view, std::expected<std::string_view, std::string>>> repository);
     std::shared_ptr<domain::Team> GetTeam(std::string_view id) override;
     std::vector<std::shared_ptr<domain::Team>> GetAllTeams() override;
     std::string UpdateTeam(std::string_view id, std::shared_ptr<domain::Team> team) override;

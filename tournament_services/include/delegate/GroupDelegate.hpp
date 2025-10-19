@@ -32,7 +32,7 @@ inline std::expected<std::string, std::string> GroupDelegate::CreateGroup(const 
         return std::unexpected("Tournament doesn't exist");
     }
     domain::Group g = group;
-    g.TournamentId() = tournament->Id();
+    g.TournamentId() = tournament.value()->Id();
     if (!g.Teams().empty()) {
         for (auto& t : g.Teams()) {
             auto team = teamRepository->ReadById(t.Id);
@@ -84,7 +84,7 @@ std::expected<void, std::string> GroupDelegate::UpdateTeams(const std::string_vi
         if (persistedTeam == nullptr) {
             return std::unexpected(std::format("Team {} doesn't exist", team.Id));
         }
-        groupRepository->UpdateGroupAddTeam(groupId, persistedTeam);
+        groupRepository->UpdateGroupAddTeam(groupId, persistedTeam.value());
     }
     return {};
 }

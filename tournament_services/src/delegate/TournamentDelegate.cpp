@@ -1,6 +1,7 @@
 //
 // Created by tomas on 8/31/25.
 //
+
 #include <string_view>
 #include <memory>
 
@@ -8,42 +9,43 @@
 
 #include "persistence/repository/IRepository.hpp"
 
-TournamentDelegate::TournamentDelegate(std::shared_ptr<IRepository<domain::Tournament, std::string> > repository, std::shared_ptr<QueueMessageProducer> producer) : tournamentRepository(std::move(repository)), producer(std::move(producer)) {
+TournamentDelegate::TournamentDelegate(std::shared_ptr<IRepository<domain::Tournament, std::string, std::expected<std::string, std::string>> > repository, std::shared_ptr<QueueMessageProducer> producer) : tournamentRepository(std::move(repository)), producer(std::move(producer)) {
 }
 
-std::string TournamentDelegate::CreateTournament(std::shared_ptr<domain::Tournament> tournament) {
-    //fill groups according to max groups
-    std::shared_ptr<domain::Tournament> tp = std::move(tournament);
-    // for (auto[i, g] = std::tuple{0, 'A'}; i < tp->Format().NumberOfGroups(); i++,g++) {
-    //     tp->Groups().push_back(domain::Group{std::format("Tournament {}", g)});
-    // }
+std::expected<std::string, std::string> TournamentDelegate::CreateTournament(std::shared_ptr<domain::Tournament> tournament) {
+    const auto result = tournamentRepository->Create(*tournament);
 
-    std::string id = tournamentRepository->Create(*tp);
-    producer->SendMessage(id, "tournament.created");
+    if (result) {
+        producer->SendMessage(*result, "tournament.created");
+    }
 
-    //if groups are completed also create matches
-
-    return id;
+    return result;
 }
 
-std::shared_ptr<domain::Tournament> TournamentDelegate::GetTournament(std::string_view id) {
+std::expected<std::shared_ptr<domain::Tournament>, std::string> TournamentDelegate::GetTournament(std::string_view id) {
     return tournamentRepository->ReadById(id.data());
 }
 
-std::vector<std::shared_ptr<domain::Tournament>> TournamentDelegate::ReadAll() {
+std::expected<std::vector<std::shared_ptr<domain::Tournament>>, std::string> TournamentDelegate::ReadAll() {
     return tournamentRepository->ReadAll();
 }
 
-std::string TournamentDelegate::UpdateTournament(std::string_view id, std::shared_ptr<domain::Tournament> tournament) {
-    std::shared_ptr<domain::Tournament> tp = std::move(tournament);
+std::expected<std::string, std::string> TournamentDelegate::UpdateTournament(std::string_view id, std::shared_ptr<domain::Tournament> tournament) {
+    const auto result = tournamentRepository->Update(id.data(), *tournament);
 
-    std::string id2 = tournamentRepository->Update(id.data(), *tp);
-    producer->SendMessage(id2, "tournament.updated");
+    if (result) {
+        producer->SendMessage(*result, "tournament.updated");
+    }
 
-    return id2;
+    return result;
 }
 
-void TournamentDelegate::DeleteTournament(std::string_view id) {
-    tournamentRepository->Delete(id.data());
-    return;
+std::expected<void, std::string> TournamentDelegate::DeleteTournament(std::string_view id) {
+    const auto result = tournamentRepository->Delete(id.data());
+
+    if (result) {
+        producer->SendMessage(std::string(id), "tournament.deleted");
+    }
+
+    return result;
 }

@@ -16,13 +16,26 @@
 #include "domain/Utilities.hpp"
 
 
-class TeamRepository : public IRepository<domain::Team, std::string_view> {
+class TeamRepository : public IRepository<domain::Team, std::string_view, std::expected<std::string_view, std::string>> {
     std::shared_ptr<IDbConnectionProvider> connectionProvider;
 public:
 
     explicit TeamRepository(std::shared_ptr<IDbConnectionProvider> connectionProvider) : connectionProvider(std::move(connectionProvider)){}
 
-    std::vector<std::shared_ptr<domain::Team>> ReadAll() override {
+    std::expected<std::string_view, std::string> Create(const domain::Team &entity) override {
+        auto pooled = connectionProvider->Connection();
+        auto connection = dynamic_cast<PostgresConnection*>(&*pooled);
+        nlohmann::json teamBody = entity;
+
+        pqxx::work tx(*(connection->connection));
+        pqxx::result result = tx.exec(pqxx::prepped{"insert_team"}, teamBody.dump());
+
+        tx.commit();
+
+        return result[0]["id"].c_str();
+    }
+
+    std::expected<std::vector<std::shared_ptr<domain::Team>>, std::string> ReadAll() override {
         std::vector<std::shared_ptr<domain::Team>> teams;
 
         auto pooled = connectionProvider->Connection();
@@ -39,7 +52,7 @@ public:
         return teams;
     }
 
-    std::shared_ptr<domain::Team> ReadById(std::string_view id) override {
+    std::expected<std::shared_ptr<domain::Team>, std::string> ReadById(std::string_view id) override {
         auto pooled = connectionProvider->Connection();
         auto connection = dynamic_cast<PostgresConnection*>(&*pooled);
 
@@ -52,41 +65,28 @@ public:
         return team;
     }
 
-    std::string_view Create(const domain::Team &entity) override {
-        auto pooled = connectionProvider->Connection();
-        auto connection = dynamic_cast<PostgresConnection*>(&*pooled);
-        nlohmann::json teamBody = entity;
-
-        pqxx::work tx(*(connection->connection));
-        pqxx::result result = tx.exec(pqxx::prepped{"insert_team"}, teamBody.dump());
-
-        tx.commit();
-
-        return result[0]["id"].c_str();
-    }
-
-    std::string_view Update(std::string_view id, const domain::Team & entity) override {
+    std::expected<std::string_view, std::string> Update(std::string_view id, const domain::Team & entity) override {
         const nlohmann::json teamDoc = entity;
 
         auto pooled = connectionProvider->Connection();
         const auto connection = dynamic_cast<PostgresConnection*>(&*pooled);
 
         pqxx::work tx(*(connection->connection));
-        const pqxx::result result = tx.exec_prepared("update_team_by_id", id, teamDoc.dump());
+        const pqxx::result result = tx.exec(pqxx::prepped{"update_team_by_id"}, pqxx::params{id, teamDoc.dump()});
 
         tx.commit();
 
         return result[0]["id"].c_str();
     }
 
-
-    void Delete(std::string_view id) override{
+    std::expected<void, std::string> Delete(std::string_view id) override{
         auto pooled = connectionProvider->Connection();
         const auto connection = dynamic_cast<PostgresConnection*>(&*pooled);
         
         pqxx::work tx(*(connection->connection));
         tx.exec(pqxx::prepped{"delete_team_by_id"}, std::string{id});
         tx.commit();
+        return {};
     }
 };
 
