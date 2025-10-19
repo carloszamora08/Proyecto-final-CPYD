@@ -56,7 +56,7 @@ public:
         pqxx::work tx(*(connection->connection));
 
         try {
-            const pqxx::result result{tx.exec("select id, 'name' as name from teams")};
+            const pqxx::result result{tx.exec("select id, document->>'name' as name from teams")};
 
             for(const auto& row : result){
                 teams.push_back(std::make_shared<domain::Team>(
