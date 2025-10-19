@@ -5,34 +5,30 @@
 #include "delegate/TeamDelegate.hpp"
 
 #include <utility>
+#include <string_view>
+#include <memory>
 
-TeamDelegate::TeamDelegate(std::shared_ptr<IRepository<domain::Team, std::string_view, std::expected<std::string_view, std::string>> > repository) : teamRepository(std::move(repository)) {
+TeamDelegate::TeamDelegate(std::shared_ptr<IRepository<domain::Team, std::string, std::expected<std::string, std::string>>> repository)
+    : teamRepository(std::move(repository)) {
 }
 
-std::vector<std::shared_ptr<domain::Team>> TeamDelegate::GetAllTeams() {
-    return teamRepository->ReadAll().value();
+std::expected<std::string, std::string> TeamDelegate::CreateTeam(std::shared_ptr<domain::Team> team) {
+    return teamRepository->Create(*team);
 }
 
-std::shared_ptr<domain::Team> TeamDelegate::GetTeam(std::string_view id) {
-    return teamRepository->ReadById(id.data()).value();
+std::expected<std::shared_ptr<domain::Team>, std::string> TeamDelegate::GetTeam(std::string_view id) {
+    return teamRepository->ReadById(std::string(id));
 }
 
-std::string TeamDelegate::UpdateTeam(std::string_view id, std::shared_ptr<domain::Team> team) {
-    std::shared_ptr<domain::Team> tp = std::move(team);
-
-    std::string id2 = teamRepository->Update(id.data(), *tp).value().data();
-
-    return id2;
+std::expected<std::vector<std::shared_ptr<domain::Team>>, std::string> TeamDelegate::ReadAll() {
+    return teamRepository->ReadAll();
 }
 
-void TeamDelegate::DeleteTeam(std::string_view id) {
-    teamRepository->Delete(id.data());
-    return;
+std::expected<std::string, std::string> TeamDelegate::UpdateTeam(std::string_view id, std::shared_ptr<domain::Team> team) {
+    return teamRepository->Update(std::string(id), *team);
 }
 
-std::string_view TeamDelegate::SaveTeam(const domain::Team& team){
-
-    return teamRepository->Create(team).value();
+std::expected<void, std::string> TeamDelegate::DeleteTeam(std::string_view id) {
+    return teamRepository->Delete(std::string(id));
 }
-
 
