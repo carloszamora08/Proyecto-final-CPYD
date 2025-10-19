@@ -39,7 +39,7 @@ public:
             connectionPool.back()->prepare("select_groups_by_tournament", "select * from GROUPS where tournament_id = $1");
             connectionPool.back()->prepare("select_group_in_tournament", R"(
                 select * from GROUPS
-                where  tournament_id = $1
+                where tournament_id = $1
                 and document @> jsonb_build_object('teams', jsonb_build_array(jsonb_build_object('id', $2::text)))
             )");
             connectionPool.back()->prepare("select_group_by_tournamentid_groupid", "select * from GROUPS where tournament_id = $1 and id = $2");
