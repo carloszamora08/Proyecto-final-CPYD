@@ -43,7 +43,7 @@ inline std::expected<std::string, std::string> GroupDelegate::CreateGroup(const 
     if (!existingGroups) {
         return std::unexpected(existingGroups.error());
     }
-    if (existingGroups.value().size() > tournament.value()->Format().NumberOfGroups()) {
+    if (existingGroups.value().size() >= tournament.value()->Format().NumberOfGroups()) {
         return std::unexpected("Tournament has reached maximum number of groups");
     }
 
