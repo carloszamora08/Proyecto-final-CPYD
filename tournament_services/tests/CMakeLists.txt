@@ -5,11 +5,13 @@ set(TEST_SOURCES
         controller/TournamentControllerTest.cpp
         controller/GroupControllerTest.cpp
         delegate/TournamentDelegateTest.cpp
+        delegate/TeamDelegateTest.cpp
         delegate/GroupDelegateTest.cpp
         ../src/controller/TeamController.cpp
         ../src/controller/TournamentController.cpp
         ../include/controller/GroupController.hpp
         ../src/delegate/TournamentDelegate.cpp
+        ../src/delegate/TeamDelegate.cpp
         ../include/delegate/GroupDelegate.hpp
 )
 
