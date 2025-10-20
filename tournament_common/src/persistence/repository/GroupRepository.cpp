@@ -37,7 +37,7 @@ std::expected<std::string, std::string> GroupRepository::Create(const domain::Gr
     }
 }
 
-std::expected<std::vector<std::shared_ptr<domain::Group>>, std::string> GroupRepository::ReadAll() {
+std::expected<std::vector<std::shared_ptr<domain::Group>>, std::string> GroupRepository::FindByTournamentId(const std::string_view& tournamentId) {
     std::vector<std::shared_ptr<domain::Group>> groups;
 
     auto pooled = connectionProvider->Connection();
@@ -45,7 +45,7 @@ std::expected<std::vector<std::shared_ptr<domain::Group>>, std::string> GroupRep
     pqxx::work tx(*(connection->connection));
 
     try {
-        const pqxx::result result{tx.exec("select id, document from GROUPS")};
+        const pqxx::result result = tx.exec(pqxx::prepped{"select_groups_by_tournament"}, pqxx::params{tournamentId.data()});
 
         for(const auto& row : result) {
             nlohmann::json groupDocument = nlohmann::json::parse(row["document"].as<std::string>());
@@ -69,18 +69,56 @@ std::expected<std::vector<std::shared_ptr<domain::Group>>, std::string> GroupRep
     }
 }
 
+std::expected<std::vector<std::shared_ptr<domain::Group>>, std::string> GroupRepository::ReadAll() {
+    return std::unexpected("Not implemented");
+}
+
 std::expected<std::shared_ptr<domain::Group>, std::string> GroupRepository::ReadById(std::string id) {
+    return std::unexpected("Not implemented");
+}
+
+std::expected<std::shared_ptr<domain::Group>, std::string> GroupRepository::FindByTournamentIdAndGroupId(const std::string_view& tournamentId, const std::string_view& groupId) {
     auto pooled = connectionProvider->Connection();
     const auto connection = dynamic_cast<PostgresConnection*>(&*pooled);
     pqxx::work tx(*(connection->connection));
 
     try {
-        const pqxx::result result = tx.exec(pqxx::prepped{"select_group_by_id"}, id);
+        const pqxx::result result = tx.exec(pqxx::prepped{"select_group_by_tournamentid_groupid"}, pqxx::params{tournamentId.data(), groupId.data()});
 
         if (result.empty()) {
             return std::unexpected("Group not found");
         }
+
+        nlohmann::json groupDocument = nlohmann::json::parse(result.at(0)["document"].as<std::string>());
+        auto group = std::make_shared<domain::Group>(groupDocument);
+        group->Id() = result.at(0)["id"].as<std::string>();
+
+        tx.commit();
+        return group;
+    } catch (const pqxx::sql_error& e) {
+        std::cerr << "SQL error: " << e.what() << std::endl;
+        std::cerr << "Query was: " << e.query() << std::endl;
         
+        return std::unexpected(std::format("SQL error: {}", e.what()));
+    } catch (const std::exception& e) {
+        std::cerr << "Unexpected error: " << e.what() << std::endl;
+        
+        return std::unexpected(std::format("Database error: {}", e.what()));
+    }
+}
+
+std::expected<std::shared_ptr<domain::Group>, std::string> GroupRepository::FindByTournamentIdAndTeamId(const std::string_view& tournamentId, const std::string_view& teamId) {
+    auto pooled = connectionProvider->Connection();
+    const auto connection = dynamic_cast<PostgresConnection*>(&*pooled);
+    pqxx::work tx(*(connection->connection));
+
+    try {
+        const pqxx::result result = tx.exec(pqxx::prepped{"select_group_in_tournament"}, pqxx::params{tournamentId.data(), teamId.data()});
+
+        if (result.empty()) {
+            return std::unexpected("Group not found");
+        }
+
         nlohmann::json groupDocument = nlohmann::json::parse(result.at(0)["document"].as<std::string>());
         auto group = std::make_shared<domain::Group>(groupDocument);
         group->Id() = result.at(0)["id"].as<std::string>();
@@ -149,98 +187,6 @@ std::expected<void, std::string> GroupRepository::Delete(std::string id) {
     } catch (const std::exception& e) {
         std::cerr << "Unexpected error: " << e.what() << std::endl;
 
-        return std::unexpected(std::format("Database error: {}", e.what()));
-    }
-}
-
-std::expected<std::vector<std::shared_ptr<domain::Group>>, std::string> GroupRepository::FindByTournamentId(const std::string_view& tournamentId) {
-    std::vector<std::shared_ptr<domain::Group>> groups;
-
-    auto pooled = connectionProvider->Connection();
-    const auto connection = dynamic_cast<PostgresConnection*>(&*pooled);
-    pqxx::work tx(*(connection->connection));
-
-    try {
-        const pqxx::result result = tx.exec(pqxx::prepped{"select_groups_by_tournament"}, pqxx::params{tournamentId.data()});
-
-        for(const auto& row : result) {
-            nlohmann::json groupDocument = nlohmann::json::parse(row["document"].as<std::string>());
-            auto group = std::make_shared<domain::Group>(groupDocument);
-            group->Id() = row["id"].as<std::string>();
-
-            groups.push_back(group);
-        }
-
-        tx.commit();
-        return groups;
-    } catch (const pqxx::sql_error& e) {
-        std::cerr << "SQL error: " << e.what() << std::endl;
-        std::cerr << "Query was: " << e.query() << std::endl;
-
-        return std::unexpected(std::format("SQL error: {}", e.what()));
-    } catch (const std::exception& e) {
-        std::cerr << "Unexpected error: " << e.what() << std::endl;
-        
-        return std::unexpected(std::format("Database error: {}", e.what()));
-    }
-}
-
-std::expected<std::shared_ptr<domain::Group>, std::string> GroupRepository::FindByTournamentIdAndGroupId(const std::string_view& tournamentId, const std::string_view& groupId) {
-    auto pooled = connectionProvider->Connection();
-    const auto connection = dynamic_cast<PostgresConnection*>(&*pooled);
-    pqxx::work tx(*(connection->connection));
-
-    try {
-        const pqxx::result result = tx.exec(pqxx::prepped{"select_group_by_tournamentid_groupid"}, pqxx::params{tournamentId.data(), groupId.data()});
-
-        if (result.empty()) {
-            return std::unexpected("Group not found");
-        }
-
-        nlohmann::json groupDocument = nlohmann::json::parse(result.at(0)["document"].as<std::string>());
-        auto group = std::make_shared<domain::Group>(groupDocument);
-        group->Id() = result.at(0)["id"].as<std::string>();
-
-        tx.commit();
-        return group;
-    } catch (const pqxx::sql_error& e) {
-        std::cerr << "SQL error: " << e.what() << std::endl;
-        std::cerr << "Query was: " << e.query() << std::endl;
-        
-        return std::unexpected(std::format("SQL error: {}", e.what()));
-    } catch (const std::exception& e) {
-        std::cerr << "Unexpected error: " << e.what() << std::endl;
-        
-        return std::unexpected(std::format("Database error: {}", e.what()));
-    }
-}
-
-std::expected<std::shared_ptr<domain::Group>, std::string> GroupRepository::FindByTournamentIdAndTeamId(const std::string_view& tournamentId, const std::string_view& teamId) {
-    auto pooled = connectionProvider->Connection();
-    const auto connection = dynamic_cast<PostgresConnection*>(&*pooled);
-    pqxx::work tx(*(connection->connection));
-
-    try {
-        const pqxx::result result = tx.exec(pqxx::prepped{"select_group_in_tournament"}, pqxx::params{tournamentId.data(), teamId.data()});
-
-        if (result.empty()) {
-            return std::unexpected("Group not found");
-        }
-
-        nlohmann::json groupDocument = nlohmann::json::parse(result.at(0)["document"].as<std::string>());
-        auto group = std::make_shared<domain::Group>(groupDocument);
-        group->Id() = result.at(0)["id"].as<std::string>();
-
-        tx.commit();
-        return group;
-    } catch (const pqxx::sql_error& e) {
-        std::cerr << "SQL error: " << e.what() << std::endl;
-        std::cerr << "Query was: " << e.query() << std::endl;
-        
-        return std::unexpected(std::format("SQL error: {}", e.what()));
-    } catch (const std::exception& e) {
-        std::cerr << "Unexpected error: " << e.what() << std::endl;
-        
         return std::unexpected(std::format("Database error: {}", e.what()));
     }
 }

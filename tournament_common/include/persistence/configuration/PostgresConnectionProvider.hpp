@@ -33,16 +33,15 @@ public:
             connectionPool.back()->prepare("delete_team_by_id", "delete from TEAMS where id = $1");
 
             connectionPool.back()->prepare("insert_group", "insert into GROUPS (tournament_id, document) values($1, $2) RETURNING id");
-            connectionPool.back()->prepare("select_group_by_id", "select * from GROUPS where id = $1");
-            connectionPool.back()->prepare("update_group_by_id", "update GROUPS set tournament_id = $1, document = $2 where id = $3 RETURNING id");
-            connectionPool.back()->prepare("delete_group_by_id", "delete from GROUPS where id = $1");;
+            connectionPool.back()->prepare("select_group_by_tournamentid_groupid", "select * from GROUPS where tournament_id = $1 and id = $2");
             connectionPool.back()->prepare("select_groups_by_tournament", "select * from GROUPS where tournament_id = $1");
             connectionPool.back()->prepare("select_group_in_tournament", R"(
                 select * from GROUPS
                 where tournament_id = $1
                 and document @> jsonb_build_object('teams', jsonb_build_array(jsonb_build_object('id', $2::text)))
             )");
-            connectionPool.back()->prepare("select_group_by_tournamentid_groupid", "select * from GROUPS where tournament_id = $1 and id = $2");
+            connectionPool.back()->prepare("update_group_by_id", "update GROUPS set tournament_id = $1, document = $2 where id = $3 RETURNING id");
+            connectionPool.back()->prepare("delete_group_by_id", "delete from GROUPS where id = $1");;
             connectionPool.back()->prepare("update_group_add_team", R"(
                 update GROUPS
                     set document = jsonb_insert(document, '{teams,-1}', $2),
