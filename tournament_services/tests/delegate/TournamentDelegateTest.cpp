@@ -110,24 +110,23 @@ TEST_F(TournamentDelegateTest, GetTournamentSuccessTest) {
     testing::Mock::VerifyAndClearExpectations(&tournamentRepositoryMock);
 
     EXPECT_EQ(response.has_value(), true);
-    EXPECT_EQ(response.value() != nullptr, true);
     EXPECT_EQ(response.value()->Id(), tournamentId);
     EXPECT_EQ(response.value()->Name(), "Test Tournament");
     EXPECT_EQ(response.value()->Year(), "2025");
 }
 
 TEST_F(TournamentDelegateTest, GetTournamentNotFoundTest) {
-    const std::string tournamentId = "non-existent-id";
+    const std::string tournamentId = "";
 
     EXPECT_CALL(*tournamentRepositoryMock, ReadById(tournamentId))
-        .WillOnce(testing::Return(std::unexpected<std::string>("Tournament not found")));
+        .WillOnce(testing::Return(std::expected<std::shared_ptr<domain::Tournament>, std::string>(nullptr)));
 
     auto response = tournamentDelegate->GetTournament(tournamentId);
 
     testing::Mock::VerifyAndClearExpectations(&tournamentRepositoryMock);
 
-    EXPECT_EQ(response.has_value(), false);
-    EXPECT_EQ(response.error(), "Tournament not found");
+    EXPECT_EQ(response.has_value(), true);
+    EXPECT_EQ(response.value(), nullptr);
 }
 
 TEST_F(TournamentDelegateTest, ReadAllTournamentsSuccessTest) {
@@ -152,4 +151,102 @@ TEST_F(TournamentDelegateTest, ReadAllTournamentsSuccessTest) {
     EXPECT_EQ(response.value()[0]->Name(), "Tournament 1");
     EXPECT_EQ(response.value()[1]->Id(), "id-2");
     EXPECT_EQ(response.value()[1]->Name(), "Tournament 2");
+}
+
+TEST_F(TournamentDelegateTest, ReadAllTournamentsEmptyListTest) {
+    std::vector<std::shared_ptr<domain::Tournament>> emptyList;
+
+    EXPECT_CALL(*tournamentRepositoryMock, ReadAll())
+        .WillOnce(testing::Return(std::expected<std::vector<std::shared_ptr<domain::Tournament>>, std::string>(emptyList)));
+
+    auto response = tournamentDelegate->ReadAll();
+
+    testing::Mock::VerifyAndClearExpectations(&tournamentRepositoryMock);
+
+    EXPECT_EQ(response.has_value(), true);
+    EXPECT_EQ(response.value().empty(), true);
+    EXPECT_EQ(response.value().size(), 0);
+}
+
+TEST_F(TournamentDelegateTest, UpdateTournamentSuccessTest) {
+    const std::string tournamentId = "update-id";
+    domain::Tournament capturedTournament;
+
+    EXPECT_CALL(*tournamentRepositoryMock, Update(tournamentId, ::testing::_))
+        .WillOnce(testing::DoAll(
+                testing::SaveArg<1>(&capturedTournament),
+                testing::Return(std::expected<std::string, std::string>(tournamentId))
+            )
+        );
+
+    EXPECT_CALL(*producerMock, SendMessage(tournamentId, "tournament.updated"))
+        .Times(1);
+
+    nlohmann::json updatedData = {{"id", tournamentId}, {"name", "Updated Tournament"}, {"year", "2026"}};
+    std::shared_ptr<domain::Tournament> tournament = std::make_shared<domain::Tournament>(updatedData);
+    auto response = tournamentDelegate->UpdateTournament(tournamentId, tournament);
+
+    testing::Mock::VerifyAndClearExpectations(&tournamentRepositoryMock);
+    testing::Mock::VerifyAndClearExpectations(&producerMock);
+
+    EXPECT_EQ(capturedTournament.Id(), updatedData.at("id").get<std::string>());
+    EXPECT_EQ(capturedTournament.Name(), updatedData.at("name").get<std::string>());
+    EXPECT_EQ(capturedTournament.Year(), updatedData.at("year").get<std::string>());
+    EXPECT_EQ(response.has_value(), true);
+    EXPECT_EQ(response.value(), tournamentId);
+}
+
+TEST_F(TournamentDelegateTest, UpdateTournamentNotFoundTest) {
+    const std::string tournamentId = "non existing id";
+
+    EXPECT_CALL(*tournamentRepositoryMock, Update(tournamentId, ::testing::_))
+        .WillOnce(testing::Return(std::unexpected<std::string>("Tournament not found for update")));
+
+    EXPECT_CALL(*producerMock, SendMessage(::testing::_, ::testing::_))
+        .Times(0);
+
+    nlohmann::json updatedData = {{"id", tournamentId}, {"name", "Updated Tournament"}, {"year", "2026"}};
+    std::shared_ptr<domain::Tournament> tournament = std::make_shared<domain::Tournament>(updatedData);
+    auto response = tournamentDelegate->UpdateTournament(tournamentId, tournament);
+
+    testing::Mock::VerifyAndClearExpectations(&tournamentRepositoryMock);
+    testing::Mock::VerifyAndClearExpectations(&producerMock);
+
+    EXPECT_EQ(response.has_value(), false);
+    EXPECT_EQ(response.error(), "Tournament not found for update");
+}
+
+TEST_F(TournamentDelegateTest, DeleteTournamentSuccessTest) {
+    const std::string tournamentId = "delete-id";
+
+    EXPECT_CALL(*tournamentRepositoryMock, Delete(tournamentId))
+        .WillOnce(testing::Return(std::expected<void, std::string>()));
+
+    EXPECT_CALL(*producerMock, SendMessage(tournamentId, "tournament.deleted"))
+        .Times(1);
+
+    auto response = tournamentDelegate->DeleteTournament(tournamentId);
+
+    testing::Mock::VerifyAndClearExpectations(&tournamentRepositoryMock);
+    testing::Mock::VerifyAndClearExpectations(&producerMock);
+
+    EXPECT_EQ(response.has_value(), true);
+}
+
+TEST_F(TournamentDelegateTest, DeleteTournamentNotFoundTest) {
+    const std::string tournamentId = "non existing id";
+
+    EXPECT_CALL(*tournamentRepositoryMock, Delete(tournamentId))
+        .WillOnce(testing::Return(std::unexpected<std::string>("Tournament not found for deletion")));
+
+    EXPECT_CALL(*producerMock, SendMessage(::testing::_, ::testing::_))
+        .Times(0);
+
+    auto response = tournamentDelegate->DeleteTournament(tournamentId);
+
+    testing::Mock::VerifyAndClearExpectations(&tournamentRepositoryMock);
+    testing::Mock::VerifyAndClearExpectations(&producerMock);
+
+    EXPECT_EQ(response.has_value(), false);
+    EXPECT_EQ(response.error(), "Tournament not found for deletion");
 }
