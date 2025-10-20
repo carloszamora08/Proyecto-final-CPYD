@@ -100,6 +100,8 @@ TEST_F(GroupDelegateTest, CreateGroupSucessTest) {
     auto response = groupDelegate->CreateGroup(tournamentId, group);
 
     testing::Mock::VerifyAndClearExpectations(&groupRepositoryMock);
+    testing::Mock::VerifyAndClearExpectations(&tournamentRepositoryMock2);
+    testing::Mock::VerifyAndClearExpectations(&teamRepositoryMock2);
 
     EXPECT_EQ(capturedTournamentIdTournamentRepo, tournamentId.data());
     EXPECT_EQ(capturedTournamentIdGroupRepo, tournamentId);
@@ -152,6 +154,8 @@ TEST_F(GroupDelegateTest, CreateGroupDBInsertionFailTest) {
     auto response = groupDelegate->CreateGroup(tournamentId, group);
 
     testing::Mock::VerifyAndClearExpectations(&groupRepositoryMock);
+    testing::Mock::VerifyAndClearExpectations(&tournamentRepositoryMock2);
+    testing::Mock::VerifyAndClearExpectations(&teamRepositoryMock2);
 
     EXPECT_EQ(capturedTournamentIdTournamentRepo, tournamentId.data());
     EXPECT_EQ(capturedTournamentIdGroupRepo, tournamentId);
@@ -209,6 +213,8 @@ TEST_F(GroupDelegateTest, CreateGroupOverflowingTournamentTest) {
     auto response = groupDelegate->CreateGroup(tournamentId, group);
 
     testing::Mock::VerifyAndClearExpectations(&groupRepositoryMock);
+    testing::Mock::VerifyAndClearExpectations(&tournamentRepositoryMock2);
+    testing::Mock::VerifyAndClearExpectations(&teamRepositoryMock2);
 
     EXPECT_EQ(capturedTournamentIdTournamentRepo, tournamentId.data());
     EXPECT_EQ(capturedTournamentIdGroupRepo, tournamentId);
@@ -243,6 +249,8 @@ TEST_F(GroupDelegateTest, CreateGroupTournamentFailTest) {
     auto response = groupDelegate->CreateGroup(tournamentId, group);
 
     testing::Mock::VerifyAndClearExpectations(&groupRepositoryMock);
+    testing::Mock::VerifyAndClearExpectations(&tournamentRepositoryMock2);
+    testing::Mock::VerifyAndClearExpectations(&teamRepositoryMock2);
 
     EXPECT_EQ(capturedTournamentIdTournamentRepo, tournamentId.data());
     EXPECT_FALSE(response.has_value());
@@ -283,6 +291,8 @@ TEST_F(GroupDelegateTest, CreateGroupExistingGroupsFailTest) {
     auto response = groupDelegate->CreateGroup(tournamentId, group);
 
     testing::Mock::VerifyAndClearExpectations(&groupRepositoryMock);
+    testing::Mock::VerifyAndClearExpectations(&tournamentRepositoryMock2);
+    testing::Mock::VerifyAndClearExpectations(&teamRepositoryMock2);
 
     EXPECT_EQ(capturedTournamentIdTournamentRepo, tournamentId.data());
     EXPECT_EQ(capturedTournamentIdGroupRepo, tournamentId);
@@ -331,6 +341,8 @@ TEST_F(GroupDelegateTest, CreateGroupOverflowingGroupTest) {
     auto response = groupDelegate->CreateGroup(tournamentId, group);
 
     testing::Mock::VerifyAndClearExpectations(&groupRepositoryMock);
+    testing::Mock::VerifyAndClearExpectations(&tournamentRepositoryMock2);
+    testing::Mock::VerifyAndClearExpectations(&teamRepositoryMock2);
 
     EXPECT_EQ(capturedTournamentIdTournamentRepo, tournamentId.data());
     EXPECT_EQ(capturedTournamentIdGroupRepo, tournamentId);
@@ -406,6 +418,8 @@ TEST_F(GroupDelegateTest, CreateGroupInvalidTeamTest) {
     auto response = groupDelegate->CreateGroup(tournamentId, group);
 
     testing::Mock::VerifyAndClearExpectations(&groupRepositoryMock);
+    testing::Mock::VerifyAndClearExpectations(&tournamentRepositoryMock2);
+    testing::Mock::VerifyAndClearExpectations(&teamRepositoryMock2);
 
     EXPECT_EQ(capturedTournamentIdTournamentRepo, tournamentId.data());
     EXPECT_EQ(capturedTournamentIdGroupRepo, tournamentId);
@@ -512,6 +526,8 @@ TEST_F(GroupDelegateTest, CreateGroupExistingTeamFailTest) {
     auto response = groupDelegate->CreateGroup(tournamentId, group);
 
     testing::Mock::VerifyAndClearExpectations(&groupRepositoryMock);
+    testing::Mock::VerifyAndClearExpectations(&tournamentRepositoryMock2);
+    testing::Mock::VerifyAndClearExpectations(&teamRepositoryMock2);
 
     EXPECT_EQ(capturedTournamentIdTournamentRepo, tournamentId.data());
     EXPECT_EQ(capturedTournamentIdGroupRepo, tournamentId);
@@ -524,4 +540,81 @@ TEST_F(GroupDelegateTest, CreateGroupExistingTeamFailTest) {
     EXPECT_EQ(capturedTeamIdFindBy2, groupRequestBody["teams"][1]["id"].get<std::string>());
     EXPECT_FALSE(response.has_value());
     EXPECT_EQ(response.error(), "Team team-id-1 already exists in another group");
+}
+
+TEST_F(GroupDelegateTest, GetGroupsSuccessTest) {
+    std::string_view capturedTournamentId;
+    std::vector<std::shared_ptr<domain::Group>> existingGroups;
+    for (int i = 0; i < 2; i++) {
+        nlohmann::json groupData = {
+            {"id", "group-id-" + std::to_string(i)}, 
+            {"name", "Group " + std::to_string(i)}, 
+            {"region", "Region " + std::to_string(i)}, 
+            {"teams", nlohmann::json::array()}
+        };
+        auto group = std::make_shared<domain::Group>(groupData);
+        existingGroups.push_back(group);
+    }
+    EXPECT_CALL(*groupRepositoryMock, FindByTournamentId(::testing::_))
+        .WillOnce(testing::DoAll(
+                testing::SaveArg<0>(&capturedTournamentId),
+                testing::Return(std::expected<std::vector<std::shared_ptr<domain::Group>>, std::string>(existingGroups))
+            )
+        );
+
+    std::string_view tournamentId = "tournament-id";
+    auto response = groupDelegate->GetGroups(tournamentId);
+
+    testing::Mock::VerifyAndClearExpectations(&groupRepositoryMock);
+
+    EXPECT_EQ(capturedTournamentId, tournamentId);
+    EXPECT_TRUE(response.has_value());
+    EXPECT_EQ(response.value().size(), 2);
+    EXPECT_EQ(response.value()[0]->Id(), "group-id-0");
+    EXPECT_EQ(response.value()[0]->Name(), "Group 0");
+    EXPECT_EQ(response.value()[0]->Region(), "Region 0");
+    EXPECT_EQ(response.value()[0]->Teams().size(), 0);
+    EXPECT_EQ(response.value()[1]->Id(), "group-id-1");
+    EXPECT_EQ(response.value()[1]->Name(), "Group 1");
+    EXPECT_EQ(response.value()[1]->Region(), "Region 1");
+    EXPECT_EQ(response.value()[1]->Teams().size(), 0);
+}
+
+TEST_F(GroupDelegateTest, GetGroupsEmptyTest) {
+    std::string_view capturedTournamentId;
+    std::vector<std::shared_ptr<domain::Group>> existingGroups;
+    EXPECT_CALL(*groupRepositoryMock, FindByTournamentId(::testing::_))
+        .WillOnce(testing::DoAll(
+                testing::SaveArg<0>(&capturedTournamentId),
+                testing::Return(std::expected<std::vector<std::shared_ptr<domain::Group>>, std::string>(existingGroups))
+            )
+        );
+
+    std::string_view tournamentId = "tournament-id";
+    auto response = groupDelegate->GetGroups(tournamentId);
+
+    testing::Mock::VerifyAndClearExpectations(&groupRepositoryMock);
+
+    EXPECT_EQ(capturedTournamentId, tournamentId);
+    EXPECT_TRUE(response.has_value());
+    EXPECT_TRUE(response.value().empty());
+}
+
+TEST_F(GroupDelegateTest, GetGroupsFailTest) {
+    std::string_view capturedTournamentId;
+    EXPECT_CALL(*groupRepositoryMock, FindByTournamentId(::testing::_))
+        .WillOnce(testing::DoAll(
+                testing::SaveArg<0>(&capturedTournamentId),
+                testing::Return(std::unexpected<std::string>("Database connection failed"))
+            )
+        );
+
+    std::string_view tournamentId = "tournament-id";
+    auto response = groupDelegate->GetGroups(tournamentId);
+
+    testing::Mock::VerifyAndClearExpectations(&groupRepositoryMock);
+
+    EXPECT_EQ(capturedTournamentId, tournamentId);
+    EXPECT_FALSE(response.has_value());
+    EXPECT_EQ(response.error(), "Database connection failed");
 }
