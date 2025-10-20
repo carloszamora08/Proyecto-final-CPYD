@@ -22,10 +22,10 @@ public:
     std::expected<std::shared_ptr<domain::Group>, std::string> ReadById(std::string id) override;
     std::expected<std::string, std::string> Update (std::string id, const domain::Group & entity) override;
     std::expected<void, std::string> Delete(std::string id) override;
-    std::vector<std::shared_ptr<domain::Group>> FindByTournamentId(const std::string_view& tournamentId) override;
-    std::shared_ptr<domain::Group> FindByTournamentIdAndGroupId(const std::string_view& tournamentId, const std::string_view& groupId) override;
-    std::shared_ptr<domain::Group> FindByTournamentIdAndTeamId(const std::string_view& tournamentId, const std::string_view& teamId) override;
-    void UpdateGroupAddTeam(const std::string_view& groupId, const std::shared_ptr<domain::Team> & team) override;
+    std::expected<std::vector<std::shared_ptr<domain::Group>>, std::string> FindByTournamentId(const std::string_view& tournamentId) override;
+    std::expected<std::shared_ptr<domain::Group>, std::string> FindByTournamentIdAndGroupId(const std::string_view& tournamentId, const std::string_view& groupId) override;
+    std::expected<std::shared_ptr<domain::Group>, std::string> FindByTournamentIdAndTeamId(const std::string_view& tournamentId, const std::string_view& teamId) override;
+    std::expected<void, std::string> UpdateGroupAddTeam(const std::string_view& groupId, const std::shared_ptr<domain::Team> & team) override;
 };
 
 #endif //TOURNAMENTS_GROUPREPOSITORY_HPP

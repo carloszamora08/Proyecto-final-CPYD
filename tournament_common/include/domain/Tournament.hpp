@@ -51,13 +51,13 @@ namespace domain {
     {
         std::string id;
         std::string name;
-        std::string year;
+        int year;
         TournamentFormat format;
         std::vector<Group> groups;
         std::vector<Match> matches;
 
     public:
-        explicit Tournament(const std::string &name = "", const std::string &year = "", const TournamentFormat& format = TournamentFormat()) {
+        explicit Tournament(const std::string &name = "", const int &year = 0, const TournamentFormat& format = TournamentFormat()) {
             this->name = name;
             this->year = year;
             this->format = format;
@@ -79,11 +79,11 @@ namespace domain {
             return this->name;
         }
 
-        [[nodiscard]] std::string Year() const {
+        [[nodiscard]] int Year() const {
             return this->year;
         }
 
-        std::string& Year() {
+        int& Year() {
             return this->year;
         }
 
