@@ -11,11 +11,12 @@ namespace domain {
         /* data */
         std::string id;
         std::string name;
+        std::string region;
         std::string tournamentId;
         std::vector<Team> teams;
 
     public:
-        explicit Group(const std::string_view & name = "", const std::string_view&  id = "") : id(id), name(name) {
+        explicit Group(const std::string_view & name = "", const std::string_view & region = "", const std::string_view&  id = "") : id(id), name(name), region(region) {
         }
 
         [[nodiscard]] std::string Id() const {
@@ -32,6 +33,14 @@ namespace domain {
 
         [[nodiscard]] std::string & Name() {
             return  name;
+        }
+
+        [[nodiscard]] std::string Region() const {
+            return  region;
+        }
+
+        [[nodiscard]] std::string & Region() {
+            return  region;
         }
 
         [[nodiscard]] std::string TournamentId() const {
