@@ -618,3 +618,581 @@ TEST_F(GroupDelegateTest, GetGroupsFailTest) {
     EXPECT_FALSE(response.has_value());
     EXPECT_EQ(response.error(), "Database connection failed");
 }
+
+TEST_F(GroupDelegateTest, GetGroupSuccessTest) {
+    std::string_view capturedTournamentId;
+    std::string_view capturedGroupId;
+    nlohmann::json groupData = {
+        {"id", "group-id"},
+        {"name", "Test Group"},
+        {"region", "Test Region"},
+        {"teams", nlohmann::json::array()}
+    };
+    auto group = std::make_shared<domain::Group>(groupData);
+    EXPECT_CALL(*groupRepositoryMock, FindByTournamentIdAndGroupId(::testing::_, ::testing::_))
+        .WillOnce(testing::DoAll(
+                testing::SaveArg<0>(&capturedTournamentId),
+                testing::SaveArg<1>(&capturedGroupId),
+                testing::Return(std::expected<std::shared_ptr<domain::Group>, std::string>(group))
+            )
+        );
+
+    std::string_view tournamentId = "tournament-id";
+    std::string_view groupId = "group-id";
+    auto response = groupDelegate->GetGroup(tournamentId, groupId);
+
+    testing::Mock::VerifyAndClearExpectations(&groupRepositoryMock);
+
+    EXPECT_EQ(capturedTournamentId, tournamentId);
+    EXPECT_EQ(capturedGroupId, groupId);
+    EXPECT_TRUE(response.has_value());
+    EXPECT_EQ(response.value()->Id(), groupData["id"].get<std::string>());
+    EXPECT_EQ(response.value()->Name(), groupData["name"].get<std::string>());
+    EXPECT_EQ(response.value()->Region(), groupData["region"].get<std::string>());
+    EXPECT_EQ(response.value()->Teams().size(), 0);
+}
+
+TEST_F(GroupDelegateTest, GetGroupDBSelectionFailTest) {
+    std::string_view capturedTournamentId;
+    std::string_view capturedGroupId;
+    EXPECT_CALL(*groupRepositoryMock, FindByTournamentIdAndGroupId(::testing::_, ::testing::_))
+        .WillOnce(testing::DoAll(
+                testing::SaveArg<0>(&capturedTournamentId),
+                testing::SaveArg<1>(&capturedGroupId),
+                testing::Return(std::unexpected<std::string>("Group not found"))
+            )
+        );
+
+    std::string_view tournamentId = "tournament-id";
+    std::string_view groupId = "group-id";
+    auto response = groupDelegate->GetGroup(tournamentId, groupId);
+
+    testing::Mock::VerifyAndClearExpectations(&groupRepositoryMock);
+
+    EXPECT_EQ(capturedTournamentId, tournamentId);
+    EXPECT_EQ(capturedGroupId, groupId);
+    EXPECT_FALSE(response.has_value());
+    EXPECT_EQ(response.error(), "Group not found");
+}
+
+TEST_F(GroupDelegateTest, UpdateGroupSuccessTest) {
+    std::string capturedTournamentIdGroupFindBy;
+    std::string capturedGroupIdGroupFindBy;
+    nlohmann::json groupData = {
+        {"id", "update-id"},
+        {"name", "Test Group"},
+        {"region", "Test Region"},
+        {"teams", nlohmann::json::array()}
+    };
+    auto returnGroup = std::make_shared<domain::Group>(groupData);
+    EXPECT_CALL(*groupRepositoryMock, FindByTournamentIdAndGroupId(::testing::_, ::testing::_))
+        .WillOnce(testing::DoAll(
+                testing::SaveArg<0>(&capturedTournamentIdGroupFindBy),
+                testing::SaveArg<1>(&capturedGroupIdGroupFindBy),
+                testing::Return(std::expected<std::shared_ptr<domain::Group>, std::string>(returnGroup))
+            )
+        );
+
+    EXPECT_CALL(*tournamentRepositoryMock2, ReadById(::testing::_))
+        .Times(0);
+    
+    EXPECT_CALL(*teamRepositoryMock2, ReadById(::testing::_))
+        .Times(0);
+
+    EXPECT_CALL(*groupRepositoryMock, FindByTournamentIdAndTeamId(::testing::_, ::testing::_))
+        .Times(0);
+
+    std::string capturedGroupIdGroupUpdate;
+    domain::Group capturedGroupGroupUpdate;
+    EXPECT_CALL(*groupRepositoryMock, Update(::testing::_, ::testing::_))
+        .WillOnce(testing::DoAll(
+                testing::SaveArg<0>(&capturedGroupIdGroupUpdate),
+                testing::SaveArg<1>(&capturedGroupGroupUpdate),
+                testing::Return(std::expected<std::string, std::string>("update-id"))
+            )
+        );
+    
+    std::string_view tournamentId = "tournament-id";
+    nlohmann::json groupRequestBody = {{"id", "update-id"}, {"name", "update name"}, {"region", "update region"}};
+    domain::Group group = groupRequestBody;
+    group.Id() = "update-id";
+    bool updateTeams = false;
+    auto response = groupDelegate->UpdateGroup(tournamentId, group, updateTeams);
+
+    testing::Mock::VerifyAndClearExpectations(&groupRepositoryMock);
+    testing::Mock::VerifyAndClearExpectations(&tournamentRepositoryMock2);
+    testing::Mock::VerifyAndClearExpectations(&teamRepositoryMock2);
+
+    EXPECT_EQ(capturedTournamentIdGroupFindBy, tournamentId.data());
+    EXPECT_EQ(capturedGroupIdGroupFindBy, groupRequestBody["id"].get<std::string>());
+    EXPECT_EQ(capturedGroupIdGroupUpdate, groupRequestBody["id"].get<std::string>());
+    EXPECT_EQ(capturedGroupGroupUpdate.Id(), groupRequestBody["id"].get<std::string>());
+    EXPECT_EQ(capturedGroupGroupUpdate.Name(), groupRequestBody["name"].get<std::string>());
+    EXPECT_EQ(capturedGroupGroupUpdate.Region(), groupRequestBody["region"].get<std::string>());
+    EXPECT_EQ(capturedGroupGroupUpdate.Teams().size(), 0);
+    EXPECT_TRUE(response.has_value());
+}
+
+TEST_F(GroupDelegateTest, UpdateGroupFailTest) {
+    std::string capturedTournamentIdGroupFindBy;
+    std::string capturedGroupIdGroupFindBy;
+    EXPECT_CALL(*groupRepositoryMock, FindByTournamentIdAndGroupId(::testing::_, ::testing::_))
+        .WillOnce(testing::DoAll(
+                testing::SaveArg<0>(&capturedTournamentIdGroupFindBy),
+                testing::SaveArg<1>(&capturedGroupIdGroupFindBy),
+                testing::Return(std::unexpected<std::string>("Group not found"))
+            )
+        );
+
+    EXPECT_CALL(*tournamentRepositoryMock2, ReadById(::testing::_))
+        .Times(0);
+    
+    EXPECT_CALL(*teamRepositoryMock2, ReadById(::testing::_))
+        .Times(0);
+
+    EXPECT_CALL(*groupRepositoryMock, FindByTournamentIdAndTeamId(::testing::_, ::testing::_))
+        .Times(0);
+
+    EXPECT_CALL(*groupRepositoryMock, Update(::testing::_, ::testing::_))
+        .Times(0);
+    
+    std::string_view tournamentId = "tournament-id";
+    nlohmann::json groupRequestBody = {{"id", "update-id"}, {"name", "update name"}, {"region", "update region"}};
+    domain::Group group = groupRequestBody;
+    group.Id() = "update-id";
+    bool updateTeams = false;
+    auto response = groupDelegate->UpdateGroup(tournamentId, group, updateTeams);
+
+    testing::Mock::VerifyAndClearExpectations(&groupRepositoryMock);
+    testing::Mock::VerifyAndClearExpectations(&tournamentRepositoryMock2);
+    testing::Mock::VerifyAndClearExpectations(&teamRepositoryMock2);
+
+    EXPECT_EQ(capturedTournamentIdGroupFindBy, tournamentId.data());
+    EXPECT_EQ(capturedGroupIdGroupFindBy, groupRequestBody["id"].get<std::string>());
+    EXPECT_FALSE(response.has_value());
+    EXPECT_EQ(response.error(), "Group not found");
+}
+
+TEST_F(GroupDelegateTest, RemoveGroupSuccessTest) {
+    std::string capturedTournamentIdGroupFindBy;
+    std::string capturedGroupIdGroupFindBy;
+    nlohmann::json groupData = {
+        {"id", "delete-group-id"},
+        {"name", "Test Group"},
+        {"region", "Test Region"},
+        {"teams", nlohmann::json::array()}
+    };
+    auto returnGroup = std::make_shared<domain::Group>(groupData);
+    EXPECT_CALL(*groupRepositoryMock, FindByTournamentIdAndGroupId(::testing::_, ::testing::_))
+        .WillOnce(testing::DoAll(
+                testing::SaveArg<0>(&capturedTournamentIdGroupFindBy),
+                testing::SaveArg<1>(&capturedGroupIdGroupFindBy),
+                testing::Return(std::expected<std::shared_ptr<domain::Group>, std::string>(returnGroup))
+            )
+        );
+
+    std::string capturedGroupIdGroupDelete;
+    EXPECT_CALL(*groupRepositoryMock, Delete(::testing::_))
+        .WillOnce(testing::DoAll(
+                testing::SaveArg<0>(&capturedGroupIdGroupDelete),
+                testing::Return(std::expected<void, std::string>())
+            )
+        );
+
+    std::string_view tournamentId = "tournament-id";
+    std::string_view groupId = "delete-group-id";
+    auto response = groupDelegate->RemoveGroup(tournamentId, groupId);
+
+    testing::Mock::VerifyAndClearExpectations(&groupRepositoryMock);
+
+    EXPECT_EQ(capturedTournamentIdGroupFindBy, tournamentId.data());
+    EXPECT_EQ(capturedGroupIdGroupFindBy, groupId.data());
+    EXPECT_EQ(capturedGroupIdGroupDelete, groupId.data());
+    EXPECT_TRUE(response.has_value());
+}
+
+TEST_F(GroupDelegateTest, RemoveGroupFailTest) {
+    std::string capturedTournamentIdGroupFindBy;
+    std::string capturedGroupIdGroupFindBy;
+    nlohmann::json groupData = {
+        {"id", "delete-group-id"},
+        {"name", "Test Group"},
+        {"region", "Test Region"},
+        {"teams", nlohmann::json::array()}
+    };
+    auto returnGroup = std::make_shared<domain::Group>(groupData);
+    EXPECT_CALL(*groupRepositoryMock, FindByTournamentIdAndGroupId(::testing::_, ::testing::_))
+        .WillOnce(testing::DoAll(
+                testing::SaveArg<0>(&capturedTournamentIdGroupFindBy),
+                testing::SaveArg<1>(&capturedGroupIdGroupFindBy),
+                testing::Return(std::expected<std::shared_ptr<domain::Group>, std::string>(returnGroup))
+            )
+        );
+
+    std::string capturedGroupIdGroupDelete;
+    EXPECT_CALL(*groupRepositoryMock, Delete(::testing::_))
+        .WillOnce(testing::DoAll(
+                testing::SaveArg<0>(&capturedGroupIdGroupDelete),
+                testing::Return(std::unexpected<std::string>("Group not found"))
+            )
+        );
+
+    std::string_view tournamentId = "tournament-id";
+    std::string_view groupId = "delete-group-id";
+    auto response = groupDelegate->RemoveGroup(tournamentId, groupId);
+
+    testing::Mock::VerifyAndClearExpectations(&groupRepositoryMock);
+
+    EXPECT_EQ(capturedTournamentIdGroupFindBy, tournamentId.data());
+    EXPECT_EQ(capturedGroupIdGroupFindBy, groupId.data());
+    EXPECT_EQ(capturedGroupIdGroupDelete, groupId.data());
+    EXPECT_FALSE(response.has_value());
+    EXPECT_EQ(response.error(), "Group not found");
+}
+
+TEST_F(GroupDelegateTest, RemoveGroupNotFoundTest) {
+    std::string capturedTournamentIdGroupFindBy;
+    std::string capturedGroupIdGroupFindBy;
+    EXPECT_CALL(*groupRepositoryMock, FindByTournamentIdAndGroupId(::testing::_, ::testing::_))
+        .WillOnce(testing::DoAll(
+                testing::SaveArg<0>(&capturedTournamentIdGroupFindBy),
+                testing::SaveArg<1>(&capturedGroupIdGroupFindBy),
+                testing::Return(std::unexpected<std::string>("Group not found"))
+            )
+        );
+
+    EXPECT_CALL(*groupRepositoryMock, Delete(::testing::_))
+        .Times(0);
+
+    std::string_view tournamentId = "tournament-id";
+    std::string_view groupId = "delete-group-id";
+    auto response = groupDelegate->RemoveGroup(tournamentId, groupId);
+
+    testing::Mock::VerifyAndClearExpectations(&groupRepositoryMock);
+
+    EXPECT_EQ(capturedTournamentIdGroupFindBy, tournamentId.data());
+    EXPECT_EQ(capturedGroupIdGroupFindBy, groupId.data());
+    EXPECT_FALSE(response.has_value());
+    EXPECT_EQ(response.error(), "Group not found");
+}
+
+TEST_F(GroupDelegateTest, UpdateTeamsSuccessTest) {
+    std::string capturedTournamentIdGroupFindBy;
+    std::string capturedGroupIdGroupFindBy;
+    nlohmann::json groupData = {
+        {"id", "group-id"},
+        {"name", "Test Group"},
+        {"region", "Test Region"},
+        {"teams", nlohmann::json::array()}
+    };
+    auto returnGroup = std::make_shared<domain::Group>(groupData);
+    EXPECT_CALL(*groupRepositoryMock, FindByTournamentIdAndGroupId(::testing::_, ::testing::_))
+        .WillOnce(testing::DoAll(
+                testing::SaveArg<0>(&capturedTournamentIdGroupFindBy),
+                testing::SaveArg<1>(&capturedGroupIdGroupFindBy),
+                testing::Return(std::expected<std::shared_ptr<domain::Group>, std::string>(returnGroup))
+            )
+        );
+
+    std::string capturedTournamentIdTournamentRepo;
+    auto tournament = std::make_shared<domain::Tournament>("Test Tournament", 2025);
+    tournament->Id() = "tournament-id";
+    EXPECT_CALL(*tournamentRepositoryMock2, ReadById(::testing::_))
+        .WillOnce(testing::DoAll(
+                testing::SaveArg<0>(&capturedTournamentIdTournamentRepo),
+                testing::Return(std::expected<std::shared_ptr<domain::Tournament>, std::string>(tournament))
+            )
+        );
+
+    std::vector<std::string> capturedTeamIds;
+    nlohmann::json team1Data = {
+        {"id", "team-id-0"},
+        {"name", "Team 0"}
+    };
+    auto team1 = std::make_shared<domain::Team>(team1Data);
+    nlohmann::json team2Data = {
+        {"id", "team-id-1"},
+        {"name", "Team 1"}
+    };
+    auto team2 = std::make_shared<domain::Team>(team2Data);
+    EXPECT_CALL(*teamRepositoryMock2, ReadById(::testing::_))
+        .Times(4)
+        .WillOnce(testing::DoAll(
+                testing::Invoke([&capturedTeamIds](const std::string& id) {
+                    capturedTeamIds.push_back(id);
+                }),
+                testing::Return(std::expected<std::shared_ptr<domain::Team>, std::string>(team1))
+            )
+        )
+        .WillOnce(testing::DoAll(
+                testing::Invoke([&capturedTeamIds](const std::string& id) {
+                    capturedTeamIds.push_back(id);
+                }),
+                testing::Return(std::expected<std::shared_ptr<domain::Team>, std::string>(team2))
+            )
+        )
+        .WillOnce(testing::DoAll(
+                testing::Invoke([&capturedTeamIds](const std::string& id) {
+                    capturedTeamIds.push_back(id);
+                }),
+                testing::Return(std::expected<std::shared_ptr<domain::Team>, std::string>(team1))
+            )
+        )
+        .WillOnce(testing::DoAll(
+                testing::Invoke([&capturedTeamIds](const std::string& id) {
+                    capturedTeamIds.push_back(id);
+                }),
+                testing::Return(std::expected<std::shared_ptr<domain::Team>, std::string>(team2))
+            )
+        );
+
+    std::vector<std::string> capturedTournamentIdsFindBy;
+    std::vector<std::string> capturedTeamIdsFindBy;
+    EXPECT_CALL(*groupRepositoryMock, FindByTournamentIdAndTeamId(::testing::_, ::testing::_))
+        .Times(2)
+        .WillOnce(testing::DoAll(
+                testing::Invoke([&capturedTournamentIdsFindBy, &capturedTeamIdsFindBy](const std::string_view& tournId, const std::string_view& teamId) {
+                    capturedTournamentIdsFindBy.push_back(std::string(tournId));
+                    capturedTeamIdsFindBy.push_back(std::string(teamId));
+                }),
+                testing::Return(std::unexpected<std::string>("Group not found"))
+            )
+        )
+        .WillOnce(testing::DoAll(
+                testing::Invoke([&capturedTournamentIdsFindBy, &capturedTeamIdsFindBy](const std::string_view& tournId, const std::string_view& teamId) {
+                    capturedTournamentIdsFindBy.push_back(std::string(tournId));
+                    capturedTeamIdsFindBy.push_back(std::string(teamId));
+                }),
+                testing::Return(std::unexpected<std::string>("Group not found"))
+            )
+        );
+
+    std::vector<std::string> capturedGroupIds;
+    std::vector<std::shared_ptr<domain::Team>> capturedTeams;
+    EXPECT_CALL(*groupRepositoryMock, UpdateGroupAddTeam(::testing::_, ::testing::_))
+        .Times(2)
+        .WillOnce(testing::DoAll(
+                testing::Invoke([&capturedGroupIds, &capturedTeams](const std::string_view& grpId, const std::shared_ptr<domain::Team>& team) {
+                    capturedGroupIds.push_back(std::string(grpId));
+                    capturedTeams.push_back(team);
+                }),
+                testing::Return(std::expected<void, std::string>())
+            )
+        )
+        .WillOnce(testing::DoAll(
+                testing::Invoke([&capturedGroupIds, &capturedTeams](const std::string_view& grpId, const std::shared_ptr<domain::Team>& team) {
+                    capturedGroupIds.push_back(std::string(grpId));
+                    capturedTeams.push_back(team);
+                }),
+                testing::Return(std::expected<void, std::string>())
+            )
+        );
+
+    std::string_view tournamentId = "tournament-id";
+    std::string_view groupId = "group-id";
+    std::vector<domain::Team> teams;
+    nlohmann::json team1DataExe = {
+        {"id", "team-id-0"},
+        {"name", "Team 0"}
+    };
+    teams.push_back(domain::Team(team1DataExe));
+    nlohmann::json team2DataExe = {
+        {"id", "team-id-1"},
+        {"name", "Team 1"}
+    };
+    teams.push_back(domain::Team(team2DataExe));
+    auto response = groupDelegate->UpdateTeams(tournamentId, groupId, teams);
+
+    testing::Mock::VerifyAndClearExpectations(&groupRepositoryMock);
+    testing::Mock::VerifyAndClearExpectations(&tournamentRepositoryMock2);
+    testing::Mock::VerifyAndClearExpectations(&teamRepositoryMock2);
+
+    EXPECT_EQ(capturedTournamentIdGroupFindBy, tournamentId.data());
+    EXPECT_EQ(capturedGroupIdGroupFindBy, groupId.data());
+    EXPECT_EQ(capturedTournamentIdTournamentRepo, tournamentId.data());
+    EXPECT_EQ(capturedTeamIds.size(), 4);
+    EXPECT_EQ(capturedTeamIds[0], team1DataExe["id"].get<std::string>());
+    EXPECT_EQ(capturedTeamIds[1], team2DataExe["id"].get<std::string>());
+    EXPECT_EQ(capturedTeamIds[2], team1DataExe["id"].get<std::string>());
+    EXPECT_EQ(capturedTeamIds[3], team2DataExe["id"].get<std::string>());
+    EXPECT_EQ(capturedTournamentIdsFindBy.size(), 2);
+    EXPECT_EQ(capturedTournamentIdsFindBy[0], tournamentId);
+    EXPECT_EQ(capturedTournamentIdsFindBy[1], tournamentId);
+    EXPECT_EQ(capturedTeamIdsFindBy.size(), 2);
+    EXPECT_EQ(capturedTeamIdsFindBy[0], team1DataExe["id"].get<std::string>());
+    EXPECT_EQ(capturedTeamIdsFindBy[1], team2DataExe["id"].get<std::string>());
+    EXPECT_EQ(capturedGroupIds.size(), 2);
+    EXPECT_EQ(capturedGroupIds[0], groupId);
+    EXPECT_EQ(capturedGroupIds[1], groupId);
+    EXPECT_EQ(capturedTeams.size(), 2);
+    EXPECT_EQ(capturedTeams[0]->Id, team1DataExe["id"].get<std::string>());
+    EXPECT_EQ(capturedTeams[1]->Id, team2DataExe["id"].get<std::string>());
+    EXPECT_TRUE(response.has_value());
+}
+
+TEST_F(GroupDelegateTest, UpdateTeamsTeamFailTest) {
+    std::string capturedTournamentIdGroupFindBy;
+    std::string capturedGroupIdGroupFindBy;
+    nlohmann::json groupData = {
+        {"id", "group-id"},
+        {"name", "Test Group"},
+        {"region", "Test Region"},
+        {"teams", nlohmann::json::array()}
+    };
+    auto returnGroup = std::make_shared<domain::Group>(groupData);
+    EXPECT_CALL(*groupRepositoryMock, FindByTournamentIdAndGroupId(::testing::_, ::testing::_))
+        .WillOnce(testing::DoAll(
+                testing::SaveArg<0>(&capturedTournamentIdGroupFindBy),
+                testing::SaveArg<1>(&capturedGroupIdGroupFindBy),
+                testing::Return(std::expected<std::shared_ptr<domain::Group>, std::string>(returnGroup))
+            )
+        );
+
+    std::string capturedTournamentIdTournamentRepo;
+    auto tournament = std::make_shared<domain::Tournament>("Test Tournament", 2025);
+    tournament->Id() = "tournament-id";
+    EXPECT_CALL(*tournamentRepositoryMock2, ReadById(::testing::_))
+        .WillOnce(testing::DoAll(
+                testing::SaveArg<0>(&capturedTournamentIdTournamentRepo),
+                testing::Return(std::expected<std::shared_ptr<domain::Tournament>, std::string>(tournament))
+            )
+        );
+
+    std::vector<std::string> capturedTeamIds;
+    nlohmann::json team1Data = {
+        {"id", "team-id-0"},
+        {"name", "Team 0"}
+    };
+    auto team1 = std::make_shared<domain::Team>(team1Data);
+    EXPECT_CALL(*teamRepositoryMock2, ReadById(::testing::_))
+        .Times(2)
+        .WillOnce(testing::DoAll(
+                testing::Invoke([&capturedTeamIds](const std::string& id) {
+                    capturedTeamIds.push_back(id);
+                }),
+                testing::Return(std::expected<std::shared_ptr<domain::Team>, std::string>(team1))
+            )
+        )
+        .WillOnce(testing::DoAll(
+                testing::Invoke([&capturedTeamIds](const std::string& id) {
+                    capturedTeamIds.push_back(id);
+                }),
+                testing::Return(std::unexpected<std::string>("Team not found"))
+            )
+        );
+
+    std::vector<std::string> capturedTournamentIdsFindBy;
+    std::vector<std::string> capturedTeamIdsFindBy;
+    EXPECT_CALL(*groupRepositoryMock, FindByTournamentIdAndTeamId(::testing::_, ::testing::_))
+        .Times(1)
+        .WillOnce(testing::DoAll(
+                testing::Invoke([&capturedTournamentIdsFindBy, &capturedTeamIdsFindBy](const std::string_view& tournId, const std::string_view& teamId) {
+                    capturedTournamentIdsFindBy.push_back(std::string(tournId));
+                    capturedTeamIdsFindBy.push_back(std::string(teamId));
+                }),
+                testing::Return(std::unexpected<std::string>("Group not found"))
+            )
+        );
+
+    EXPECT_CALL(*groupRepositoryMock, UpdateGroupAddTeam(::testing::_, ::testing::_))
+        .Times(0);
+
+    std::string_view tournamentId = "tournament-id";
+    std::string_view groupId = "group-id";
+    std::vector<domain::Team> teams;
+    nlohmann::json team1DataExe = {
+        {"id", "team-id-0"},
+        {"name", "Team 0"}
+    };
+    teams.push_back(domain::Team(team1DataExe));
+    nlohmann::json team2DataExe = {
+        {"id", "team-id-1"},
+        {"name", "Team 1"}
+    };
+    teams.push_back(domain::Team(team2DataExe));
+    auto response = groupDelegate->UpdateTeams(tournamentId, groupId, teams);
+
+    testing::Mock::VerifyAndClearExpectations(&groupRepositoryMock);
+    testing::Mock::VerifyAndClearExpectations(&tournamentRepositoryMock2);
+    testing::Mock::VerifyAndClearExpectations(&teamRepositoryMock2);
+
+    EXPECT_EQ(capturedTournamentIdGroupFindBy, tournamentId.data());
+    EXPECT_EQ(capturedGroupIdGroupFindBy, groupId.data());
+    EXPECT_EQ(capturedTournamentIdTournamentRepo, tournamentId.data());
+    EXPECT_EQ(capturedTeamIds.size(), 2);
+    EXPECT_EQ(capturedTeamIds[0], team1DataExe["id"].get<std::string>());
+    EXPECT_EQ(capturedTeamIds[1], team2DataExe["id"].get<std::string>());
+    EXPECT_EQ(capturedTournamentIdsFindBy.size(), 1);
+    EXPECT_EQ(capturedTournamentIdsFindBy[0], tournamentId);
+    EXPECT_EQ(capturedTeamIdsFindBy.size(), 1);
+    EXPECT_EQ(capturedTeamIdsFindBy[0], team1DataExe["id"].get<std::string>());
+    EXPECT_FALSE(response.has_value());
+    EXPECT_EQ(response.error(), "Team not found");
+}
+
+TEST_F(GroupDelegateTest, UpdateTeamsOverflowingGroupTest) {
+    std::string capturedTournamentIdGroupFindBy;
+    std::string capturedGroupIdGroupFindBy;
+    nlohmann::json groupData = {
+        {"id", "group-id"},
+        {"name", "Test Group"},
+        {"region", "Test Region"},
+        {"teams", nlohmann::json::array({
+            {{"id", "team-id-2"}, {"name", "Team 2"}},
+            {{"id", "team-id-3"}, {"name", "Team 4"}},
+            {{"id", "team-id-4"}, {"name", "Team 5"}}
+        })}
+    };
+    auto returnGroup = std::make_shared<domain::Group>(groupData);
+    EXPECT_CALL(*groupRepositoryMock, FindByTournamentIdAndGroupId(::testing::_, ::testing::_))
+        .WillOnce(testing::DoAll(
+                testing::SaveArg<0>(&capturedTournamentIdGroupFindBy),
+                testing::SaveArg<1>(&capturedGroupIdGroupFindBy),
+                testing::Return(std::expected<std::shared_ptr<domain::Group>, std::string>(returnGroup))
+            )
+        );
+
+    std::string capturedTournamentIdTournamentRepo;
+    auto tournament = std::make_shared<domain::Tournament>("Test Tournament", 2025);
+    tournament->Id() = "tournament-id";
+    EXPECT_CALL(*tournamentRepositoryMock2, ReadById(::testing::_))
+        .WillOnce(testing::DoAll(
+                testing::SaveArg<0>(&capturedTournamentIdTournamentRepo),
+                testing::Return(std::expected<std::shared_ptr<domain::Tournament>, std::string>(tournament))
+            )
+        );
+
+    EXPECT_CALL(*teamRepositoryMock2, ReadById(::testing::_))
+        .Times(0);
+
+    EXPECT_CALL(*groupRepositoryMock, FindByTournamentIdAndTeamId(::testing::_, ::testing::_))
+        .Times(0);
+
+    EXPECT_CALL(*groupRepositoryMock, UpdateGroupAddTeam(::testing::_, ::testing::_))
+        .Times(0);
+
+    std::string_view tournamentId = "tournament-id";
+    std::string_view groupId = "group-id";
+    std::vector<domain::Team> teams;
+    nlohmann::json team1DataExe = {
+        {"id", "team-id-0"},
+        {"name", "Team 0"}
+    };
+    teams.push_back(domain::Team(team1DataExe));
+    nlohmann::json team2DataExe = {
+        {"id", "team-id-1"},
+        {"name", "Team 1"}
+    };
+    teams.push_back(domain::Team(team2DataExe));
+    auto response = groupDelegate->UpdateTeams(tournamentId, groupId, teams);
+
+    testing::Mock::VerifyAndClearExpectations(&groupRepositoryMock);
+    testing::Mock::VerifyAndClearExpectations(&tournamentRepositoryMock2);
+    testing::Mock::VerifyAndClearExpectations(&teamRepositoryMock2);
+
+    EXPECT_EQ(capturedTournamentIdGroupFindBy, tournamentId.data());
+    EXPECT_EQ(capturedGroupIdGroupFindBy, groupId.data());
+    EXPECT_EQ(capturedTournamentIdTournamentRepo, tournamentId.data());
+    EXPECT_FALSE(response.has_value());
+    EXPECT_EQ(response.error(), "Group exceeds maximum teams capacity");
+}
