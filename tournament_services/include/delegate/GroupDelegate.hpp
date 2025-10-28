@@ -7,14 +7,16 @@
 #include <expected>
 
 #include "IGroupDelegate.hpp"
+#include "../cms/QueueMessageProducer.hpp"
 
 class GroupDelegate : public IGroupDelegate{
     std::shared_ptr<TournamentRepository> tournamentRepository;
     std::shared_ptr<IGroupRepository> groupRepository;
     std::shared_ptr<TeamRepository> teamRepository;
+    std::shared_ptr<QueueMessageProducer> messageProducer;
 
 public:
-    inline GroupDelegate(const std::shared_ptr<TournamentRepository>& tournamentRepository, const std::shared_ptr<IGroupRepository>& groupRepository, const std::shared_ptr<TeamRepository>& teamRepository);
+    inline GroupDelegate(const std::shared_ptr<TournamentRepository>& tournamentRepository, const std::shared_ptr<IGroupRepository>& groupRepository, const std::shared_ptr<TeamRepository>& teamRepository, const std::shared_ptr<QueueMessageProducer>& messageProducer);
     std::expected<std::string, std::string> CreateGroup(const std::string_view& tournamentId, const domain::Group& group) override;
     std::expected<std::vector<std::shared_ptr<domain::Group>>, std::string> GetGroups(const std::string_view& tournamentId) override;
     std::expected<std::shared_ptr<domain::Group>, std::string> GetGroup(const std::string_view& tournamentId, const std::string_view& groupId) override;
@@ -26,10 +28,12 @@ public:
 GroupDelegate::GroupDelegate(
     const std::shared_ptr<TournamentRepository>& tournamentRepository,
     const std::shared_ptr<IGroupRepository>& groupRepository,
-    const std::shared_ptr<TeamRepository>& teamRepository)
+    const std::shared_ptr<TeamRepository>& teamRepository,
+    const std::shared_ptr<QueueMessageProducer>& messageProducer)
     : tournamentRepository(tournamentRepository),
       groupRepository(groupRepository),
-      teamRepository(teamRepository) {}
+      teamRepository(teamRepository),
+      messageProducer(messageProducer){}
 
 inline std::expected<std::string, std::string> GroupDelegate::CreateGroup(const std::string_view& tournamentId, const domain::Group& group) {
     const auto tournament = tournamentRepository->ReadById(tournamentId.data());
@@ -162,6 +166,12 @@ inline std::expected<void, std::string> GroupDelegate::UpdateTeams(const std::st
         if (!updateResult) {
             return std::unexpected(updateResult.error());
         }
+
+        std::unique_ptr<nlohmann::json> message = std::make_unique<nlohmann::json>();
+        message->emplace("tournamentId", tournamentId);
+        message->emplace("groupId", groupId);
+        message->emplace("teamId", team.Id);
+        messageProducer->SendMessage(message->dump(), "tournament.team-add");
     }
 
     return {};
