@@ -3,6 +3,7 @@
 #include <crow.h>
 
 #include "domain/Group.hpp"
+#include "cms/QueueMessageProducer.hpp"
 #include "persistence/repository/GroupRepository.hpp"
 #include "persistence/repository/TournamentRepository.hpp"
 #include "persistence/repository/TeamRepository.hpp"
@@ -38,18 +39,27 @@ public:
     MOCK_METHOD((std::expected<std::shared_ptr<domain::Team>, std::string>), ReadById, (std::string id), (override));
 };
 
+class QueueMessageProducerMock : public QueueMessageProducer {
+public:
+    QueueMessageProducerMock(): QueueMessageProducer(nullptr) {}
+
+    MOCK_METHOD(void, SendMessage, (const std::string_view& message, const std::string_view& queue), (override));
+};
+
 class GroupDelegateTest : public ::testing::Test{
 protected:
     std::shared_ptr<TournamentRepositoryMock2> tournamentRepositoryMock2;
     std::shared_ptr<GroupRepositoryMock> groupRepositoryMock;
     std::shared_ptr<TeamRepositoryMock2> teamRepositoryMock2;
+    std::shared_ptr<QueueMessageProducerMock> producerMock;
     std::shared_ptr<GroupDelegate> groupDelegate;
 
     void SetUp() override {
         tournamentRepositoryMock2 = std::make_shared<TournamentRepositoryMock2>();
         groupRepositoryMock = std::make_shared<GroupRepositoryMock>();
         teamRepositoryMock2 = std::make_shared<TeamRepositoryMock2>();
-        groupDelegate = std::make_shared<GroupDelegate>(GroupDelegate(tournamentRepositoryMock2, groupRepositoryMock, teamRepositoryMock2));
+        producerMock = std::make_shared<QueueMessageProducerMock>();
+        groupDelegate = std::make_shared<GroupDelegate>(GroupDelegate(tournamentRepositoryMock2, groupRepositoryMock, teamRepositoryMock2, producerMock));
     }
 
     // TearDown() function
@@ -987,6 +997,21 @@ TEST_F(GroupDelegateTest, UpdateTeamsSuccessTest) {
                 testing::Return(std::expected<void, std::string>())
             )
         );
+
+    std::unique_ptr<nlohmann::json> message1 = std::make_unique<nlohmann::json>();
+    message1->emplace("tournamentId", "tournament-id");
+    message1->emplace("groupId", "group-id");
+    message1->emplace("teamId", "team-id-0");
+
+    std::unique_ptr<nlohmann::json> message2 = std::make_unique<nlohmann::json>();
+    message2->emplace("tournamentId", "tournament-id");
+    message2->emplace("groupId", "group-id");
+    message2->emplace("teamId", "team-id-1");
+
+    EXPECT_CALL(*producerMock, SendMessage(message1->dump(), "tournament.team-add"))
+        .Times(1);
+    EXPECT_CALL(*producerMock, SendMessage(message2->dump(), "tournament.team-add"))
+        .Times(1);
 
     std::string_view tournamentId = "tournament-id";
     std::string_view groupId = "group-id";
