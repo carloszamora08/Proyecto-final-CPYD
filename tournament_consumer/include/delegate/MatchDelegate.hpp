@@ -20,11 +20,7 @@ public:
 inline MatchDelegate::MatchDelegate(const std::shared_ptr<IMatchRepository> &matchRepository) : matchRepository(matchRepository) {}
 
 inline void MatchDelegate::ProcessTeamAddition(const TeamAddEvent& teamAddEvent) {
-    //If there's a match to assign the team?
-    //Add team to match
-    //If no open match is found the creation a match with team
-
-
+    
 }
 
 #endif //CONSUMER_MATCHDELEGATE_HPP
