@@ -68,8 +68,8 @@ class TournamentUser(HttpUser):
                 "id": f"{team_id}"
             }]
             self.client.patch(
-                    f"/tournaments/{tournament_id}/groups/{group_id}/teams",
-                    json=team_data,
-                    catch_response=True,
-                    name=f"POST /tournaments/{tournament_id}/groups/{group_id}/teams"
+                f"/tournaments/{tournament_id}/groups/{group_id}/teams",
+                json=team_data,
+                catch_response=True,
+                name=f"POST /tournaments/{tournament_id}/groups/{group_id}/teams"
             )
