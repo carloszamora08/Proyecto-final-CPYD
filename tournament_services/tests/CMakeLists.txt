@@ -13,6 +13,13 @@ set(TEST_SOURCES
         ../src/delegate/TournamentDelegate.cpp
         ../src/delegate/TeamDelegate.cpp
         ../include/delegate/GroupDelegate.hpp
+        ../../tournament_common/include/domain/NFLStrategy.hpp
+        ../../tournament_common/src/persistence/repository/MatchRepository.cpp
+        ../../tournament_consumer/include/cms/MatchCreationListener.hpp
+        ../include/delegate/IMatchDelegate.h
+        ../src/delegate/MatchDelegate.cpp
+        ../src/controller/MatchController.cpp
+        ../../tournament_consumer/include/cms/ScoreUpdateListener.hpp
 )
 
 set(SOURCES ${TEST_SOURCES})

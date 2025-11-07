@@ -5,9 +5,11 @@
 #include "domain/Team.hpp"
 #include "domain/Tournament.hpp"
 #include "domain/Group.hpp"
-#include "domain/Match.hpp"
+#include "domain/Match.hpp"  // Incluimos Match.hpp que ahora tiene su propia serialización
 
 namespace domain {
+
+    // ========== TEAM SERIALIZATION ==========
 
     inline void to_json(nlohmann::json& json, const Team& team) {
         json = {{"id", team.Id}, {"name", team.Name}};
@@ -41,6 +43,8 @@ namespace domain {
             json["id"] = team->Id;
         }
     }
+
+    // ========== TOURNAMENT SERIALIZATION ==========
 
     inline TournamentType fromString(std::string_view type) {
         if (type == "ROUND_ROBIN")
@@ -116,6 +120,8 @@ namespace domain {
             json.at("format").get_to(tournament.Format());
     }
 
+    // ========== GROUP SERIALIZATION ==========
+
     inline void from_json(const nlohmann::json& json, Group& group) {
         if(json.contains("id")) {
             group.Id() = json["id"].get<std::string>();
@@ -125,7 +131,7 @@ namespace domain {
         }
         json["name"].get_to(group.Name());
         json["region"].get_to(group.Region());
-        
+
         if(json.contains("teams")) {
             json["teams"].get_to(group.Teams());
         }
@@ -165,6 +171,8 @@ namespace domain {
         }
         json["teams"] = group.Teams();
     }
-}
 
-#endif /* FC7CD637_41CC_48DE_8D8A_BC2CFC528D72 */
+
+} // namespace domain
+
+#endif /* DOMAIN_UTILITIES_HPP */

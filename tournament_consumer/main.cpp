@@ -5,25 +5,28 @@
 #include <thread>
 
 #include "configuration/ContainerSetup.hpp"
+#include "cms/GroupAddTeamListener.hpp"
+#include "cms/MatchCreationListener.hpp"
+#include "cms/ScoreUpdateListener.hpp"
 
 int main() {
     activemq::library::ActiveMQCPP::initializeLibrary();
     {
-        std::println("before container");
+        std::println("Starting tournament consumer...");
         const auto container = config::containerSetup();
-        std::println("after container");
+        std::println("Container initialized successfully");
 
-        std::thread tournamentCreatedThread([&] {
+        // Thread para escuchar cuando se agregan equipos a grupos
+        // Este listener verificará si el torneo está completo y creará los matches
+        std::thread teamAddThread([&] {
             auto listener = container->resolve<GroupAddTeamListener>();
             listener->Start("tournament.team-add");
         });
-        //crear otro thread aqui
 
-        tournamentCreatedThread.join();
-        //join de otro thread aqui
-        // while (true) {
-        //     std::this_thread::sleep_for(std::chrono::seconds(5));
-        // }
+        std::println("All listeners started. Press Ctrl+C to stop.");
+
+        // Esperar a que todos los threads terminen
+        teamAddThread.join();
     }
     activemq::library::ActiveMQCPP::shutdownLibrary();
     return 0;
