@@ -49,6 +49,18 @@ public:
                     where id = $1
                 RETURNING id
             )");
+            connectionPool.back()->prepare("insert_match",
+                "insert into MATCHES (document) values($1) RETURNING id");
+            connectionPool.back()->prepare("select_match_by_id",
+                "select * from MATCHES where id = $1");
+            connectionPool.back()->prepare("update_match_by_id",
+                "update MATCHES set document = $2 where id = $1 RETURNING id");
+            connectionPool.back()->prepare("select_matches_by_tournament",
+                "select * from MATCHES where document->>'tournamentId' = $1");
+            connectionPool.back()->prepare("select_played_matches_by_tournament",
+                "select * from MATCHES where document->>'tournamentId' = $1 AND document->'score' IS NOT NULL");
+            connectionPool.back()->prepare("select_pending_matches_by_tournament",
+                "select * from MATCHES where document->>'tournamentId' = $1 AND document->'score' IS NULL");
         }
     }
 

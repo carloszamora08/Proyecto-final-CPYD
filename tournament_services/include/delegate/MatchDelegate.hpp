@@ -1,22 +1,58 @@
-#ifndef A251C297_DF53_4BEB_93D6_DB45EAC8C825
-#define A251C297_DF53_4BEB_93D6_DB45EAC8C825
+#ifndef TOURNAMENTS_MATCHDELEGATE_HPP
+#define TOURNAMENTS_MATCHDELEGATE_HPP
 
-class MatchDelegate
-{
-private:
-    /* data */
+#include <memory>
+#include <map>
+#include "IMatchDelegate.h"
+#include "persistence/repository/IMatchRepository.hpp"
+#include "persistence/repository/TournamentRepository.hpp"
+#include "persistence/repository/GroupRepository.hpp"
+#include "cms/QueueMessageProducer.hpp"
+#include "domain/IMatchStrategy.hpp"
+
+class MatchDelegate : public IMatchDelegate {
+    std::shared_ptr<IMatchRepository> matchRepository;
+    std::shared_ptr<TournamentRepository> tournamentRepository;
+    std::shared_ptr<IGroupRepository> groupRepository;
+    std::shared_ptr<QueueMessageProducer> messageProducer;
+
+    // Estrategias por tipo de torneo
+    std::map<std::string, std::shared_ptr<IMatchStrategy>> strategies;
+
 public:
-    MatchDelegate(/* args */);
-    ~MatchDelegate();
+    MatchDelegate(const std::shared_ptr<IMatchRepository>& matchRepo,
+                  const std::shared_ptr<TournamentRepository>& tournamentRepo,
+                  const std::shared_ptr<IGroupRepository>& groupRepo,
+                  const std::shared_ptr<QueueMessageProducer>& producer);
+
+    std::expected<std::vector<std::shared_ptr<domain::Match>>, std::string>
+        GetMatches(std::string_view tournamentId,
+                   std::optional<std::string> filter = std::nullopt) override;
+
+    std::expected<std::shared_ptr<domain::Match>, std::string>
+        GetMatch(std::string_view tournamentId, std::string_view matchId) override;
+
+    std::expected<void, std::string>
+        UpdateMatchScore(std::string_view tournamentId,
+                        std::string_view matchId,
+                        const domain::Score& score) override;
+
+    std::expected<std::vector<std::string>, std::string>
+        CreateRegularPhaseMatches(std::string_view tournamentId) override;
+
+    std::expected<std::vector<std::string>, std::string>
+        CreatePlayoffMatches(std::string_view tournamentId) override;
+
+private:
+    // Validaciones
+    bool ValidateScore(const domain::Score& score,
+                      const domain::Tournament& tournament,
+                      domain::RoundType round);
+
+    bool AllRegularMatchesPlayed(std::string_view tournamentId);
+
+    // ✅ CAMBIO: GetStrategy ahora recibe TournamentType
+    std::shared_ptr<IMatchStrategy> GetStrategy(const domain::TournamentType& tournamentType);
 };
 
-MatchDelegate::MatchDelegate(/* args */)
-{
-}
-
-MatchDelegate::~MatchDelegate()
-{
-}
-
-
-#endif /* A251C297_DF53_4BEB_93D6_DB45EAC8C825 */
+#endif // TOURNAMENTS_MATCHDELEGATE_HPP
