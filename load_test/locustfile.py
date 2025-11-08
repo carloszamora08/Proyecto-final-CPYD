@@ -8,7 +8,7 @@ class TournamentUser(HttpUser):
 
     def create_teams(self):
         team_ids = list()
-        for i in range(32):
+        for i in range(33):
             team_data = {
                 "name": f"Team {uuid.uuid4()}"
             }
