@@ -58,8 +58,8 @@ namespace domain {
 
         // Getters const
         [[nodiscard]] std::string Id() const { return id; }
-        [[nodiscard]] Home Home() const { return home; }
-        [[nodiscard]] Visitor Visitor() const { return visitor; }
+        [[nodiscard]] Home getHome() const { return home; }
+        [[nodiscard]] Visitor getVisitor() const { return visitor; }
         [[nodiscard]] std::optional<Score> MatchScore() const { return score; }
         [[nodiscard]] RoundType Round() const { return round; }
         [[nodiscard]] std::string TournamentId() const { return tournamentId; }
@@ -67,8 +67,8 @@ namespace domain {
 
         // Getters no-const
         std::string& Id() { return id; }
-        domain::Home& Home() { return home; }
-        domain::Visitor& Visitor() { return visitor; }
+        domain::Home& getHome() { return home; }
+        domain::Visitor& getVisitor() { return visitor; }
         std::optional<Score>& MatchScore() { return score; }
         RoundType& Round() { return round; }
         std::string& TournamentId() { return tournamentId; }
@@ -133,8 +133,8 @@ namespace domain {
     inline void to_json(nlohmann::json& json, const Match& match) {
         json = {
             {"tournamentId", match.TournamentId()},
-            {"home", match.Home()},
-            {"visitor", match.Visitor()},
+            {"home", match.getHome()},
+            {"visitor", match.getVisitor()},
             {"round", roundTypeToString(match.Round())}
         };
 
@@ -162,7 +162,7 @@ namespace domain {
         if (json.contains("home") && json["home"].is_object()) {
             Home home;
             json["home"].get_to(home);
-            match.Home() = home;
+            match.getHome() = home;
         }
         
         if (json.contains("round")) {
@@ -184,8 +184,8 @@ namespace domain {
     inline void to_json(nlohmann::json& json, const std::shared_ptr<Match>& match) {
         json = {
             {"tournamentId", match->TournamentId()},
-            {"home", match->Home()},
-            {"visitor", match->Visitor()},
+            {"home", match->getHome()},
+            {"visitor", match->getVisitor()},
             {"round", roundTypeToString(match->Round())}
         };
 

@@ -147,7 +147,7 @@ namespace domain {
         }
         json["name"].get_to(group.Name());
         json["region"].get_to(group.Region());
-        json["conference"].get_to(group.Conference());
+        json["conference"].get_to(group.getConference());
 
         if(json.contains("teams")) {
             json["teams"].get_to(group.Teams());
@@ -157,7 +157,7 @@ namespace domain {
     inline void to_json(nlohmann::json& json, const std::shared_ptr<Group>& group) {
         json["name"] = group->Name();
         json["region"] = group->Region();
-        json["conference"] = group->Conference();
+        json["conference"] = group->getConference();
         json["tournamentId"] = group->TournamentId();
         if (!group->Id().empty()) {
             json["id"] = group->Id();
@@ -171,7 +171,7 @@ namespace domain {
             auto jsonGroup = nlohmann::json();
             jsonGroup["name"] = group->Name();
             jsonGroup["region"] = group->Region();
-            jsonGroup["conference"] = group->Conference();
+            jsonGroup["conference"] = group->getConference();
             jsonGroup["tournamentId"] = group->TournamentId();
             if (!group->Id().empty()) {
                 jsonGroup["id"] = group->Id();
@@ -184,7 +184,7 @@ namespace domain {
     inline void to_json(nlohmann::json& json, const Group& group) {
         json["name"] = group.Name();
         json["region"] = group.Region();
-        json["conference"] = group.Conference();
+        json["conference"] = group.getConference();
         json["tournamentId"] = group.TournamentId();
         if (!group.Id().empty()) {
             json["id"] = group.Id();
