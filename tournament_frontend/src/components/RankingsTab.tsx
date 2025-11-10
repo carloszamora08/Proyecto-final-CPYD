@@ -24,12 +24,14 @@ export default function RankingsTab({ matches, groups }: RankingsTabProps) {
 
         // Inicializar stats para todos los equipos
         groups.forEach(group => {
-            const conference = group.name.includes('AFC') ? 'AFC' : 'NFC';
+            // Usar directamente el campo conference del grupo
+            const conference = group.conference || 'AFC'; // Fallback por si acaso
+
             group.teams.forEach(team => {
                 stats.set(team.id, {
                     teamId: team.id,
                     teamName: team.name,
-                    conference,
+                    conference: conference,
                     division: group.name,
                     wins: 0,
                     losses: 0,
@@ -44,8 +46,14 @@ export default function RankingsTab({ matches, groups }: RankingsTabProps) {
         matches.forEach(match => {
             if (match.round !== 'regular' || !match.score) return;
 
-            const homeStats = stats.get(match.homeTeamId);
-            const visitorStats = stats.get(match.visitorTeamId);
+            // Usar la nueva estructura de match con home y visitor
+            const homeId = match.home?.id;
+            const visitorId = match.visitor?.id;
+
+            if (!homeId || !visitorId) return;
+
+            const homeStats = stats.get(homeId);
+            const visitorStats = stats.get(visitorId);
 
             if (!homeStats || !visitorStats) return;
 
@@ -145,8 +153,8 @@ export default function RankingsTab({ matches, groups }: RankingsTabProps) {
                                             color: '#3b82f6',
                                             fontWeight: 600
                                         }}>
-                                                ★
-                                            </span>
+                                            ★
+                                        </span>
                                     )}
                                 </td>
                                 <td style={{ padding: '1rem', fontWeight: 500 }}>{team.teamName}</td>

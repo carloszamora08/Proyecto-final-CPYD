@@ -23,6 +23,7 @@ export interface Group {
     id?: string;
     name: string;
     region: string;
+    conference: 'AFC' | 'NFC';
     tournamentId: string;
     teams: Team[];
 }
@@ -34,15 +35,19 @@ export interface Score {
 
 export type RoundType = 'regular' | 'quarterfinals' | 'semifinals' | 'final';
 
+// En tournament_frontend/src/types/index.ts
 export interface Match {
     id: string;
     tournamentId: string;
-    homeTeamId: string;
-    homeTeamName: string;
-    visitorTeamId: string;
-    visitorTeamName: string;
+    home: {
+        id: string;
+        name: string;
+    };
+    visitor: {
+        id: string;
+        name: string;
+    };
     round: RoundType;
     score?: Score;
     winnerNextMatchId?: string;
-    loserNextMatchId?: string;
 }
