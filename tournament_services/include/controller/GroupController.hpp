@@ -183,7 +183,7 @@ crow::response GroupController::UpdateTeams(const crow::request& request, const 
                 return {crow::CONFLICT, result.error()};
             }
 
-            return {422, result.error()};
+            return {409, result.error()};
         }
 
         return crow::response{crow::NO_CONTENT};

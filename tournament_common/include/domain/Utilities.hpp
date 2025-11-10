@@ -58,6 +58,8 @@ namespace domain {
     inline void from_json(const nlohmann::json& json, TournamentFormat& format) {
         if(json.contains("maxTeamsPerGroup"))
             json.at("maxTeamsPerGroup").get_to(format.MaxTeamsPerGroup());
+        if(json.contains("maxGroupsPerConference"))
+            json.at("maxGroupsPerConference").get_to(format.MaxGroupsPerConference());
         if(json.contains("numberOfGroups"))
             json.at("numberOfGroups").get_to(format.NumberOfGroups());
         if(json.contains("type"))
@@ -65,7 +67,7 @@ namespace domain {
     }
 
     inline void to_json(nlohmann::json& json, const TournamentFormat& format) {
-        json = {{"maxTeamsPerGroup", format.MaxTeamsPerGroup()}, {"numberOfGroups", format.NumberOfGroups()}};
+        json = {{"maxTeamsPerGroup", format.MaxTeamsPerGroup()}, {"maxGroupsPerConference", format.MaxGroupsPerConference()}, {"numberOfGroups", format.NumberOfGroups()}};
         switch (format.Type()) {
             case TournamentType::ROUND_ROBIN:
                 json["type"] = "ROUND_ROBIN";
@@ -81,7 +83,8 @@ namespace domain {
     inline void to_json(nlohmann::json& json, const std::shared_ptr<Tournament>& tournament) {
         json = {
             {"name", tournament->Name()},
-            {"year", tournament->Year()}
+            {"year", tournament->Year()},
+            {"finished", tournament->Finished()}
         };
         if (!tournament->Id().empty()) {
             json["id"] = tournament->Id();
@@ -95,6 +98,7 @@ namespace domain {
         }
         json["name"].get_to(tournament->Name());
         json["year"].get_to(tournament->Year());
+        json["finished"].get_to(tournament->Finished());
         if (json.contains("format"))
             json.at("format").get_to(tournament->Format());
     }
@@ -102,7 +106,8 @@ namespace domain {
     inline void to_json(nlohmann::json& json, const Tournament& tournament) {
         json = {
             {"name", tournament.Name()},
-            {"year", tournament.Year()}
+            {"year", tournament.Year()},
+            {"finished", tournament.Finished()}
         };
         if (!tournament.Id().empty()) {
             json["id"] = tournament.Id();
@@ -116,11 +121,22 @@ namespace domain {
         }
         json["name"].get_to(tournament.Name());
         json["year"].get_to(tournament.Year());
+        json["finished"].get_to(tournament.Finished());
         if (json.contains("format"))
             json.at("format").get_to(tournament.Format());
     }
 
     // ========== GROUP SERIALIZATION ==========
+
+    // Conference enum serialization
+    inline void to_json(nlohmann::json& j, const Conference& c) {
+        j = (c == Conference::AFC) ? "AFC" : "NFC";
+    }
+
+    inline void from_json(const nlohmann::json& j, Conference& c) {
+        std::string str = j.get<std::string>();
+        c = (str == "AFC") ? Conference::AFC : Conference::NFC;
+    }
 
     inline void from_json(const nlohmann::json& json, Group& group) {
         if(json.contains("id")) {
@@ -131,6 +147,7 @@ namespace domain {
         }
         json["name"].get_to(group.Name());
         json["region"].get_to(group.Region());
+        json["conference"].get_to(group.Conference());
 
         if(json.contains("teams")) {
             json["teams"].get_to(group.Teams());
@@ -140,6 +157,7 @@ namespace domain {
     inline void to_json(nlohmann::json& json, const std::shared_ptr<Group>& group) {
         json["name"] = group->Name();
         json["region"] = group->Region();
+        json["conference"] = group->Conference();
         json["tournamentId"] = group->TournamentId();
         if (!group->Id().empty()) {
             json["id"] = group->Id();
@@ -153,6 +171,7 @@ namespace domain {
             auto jsonGroup = nlohmann::json();
             jsonGroup["name"] = group->Name();
             jsonGroup["region"] = group->Region();
+            jsonGroup["conference"] = group->Conference();
             jsonGroup["tournamentId"] = group->TournamentId();
             if (!group->Id().empty()) {
                 jsonGroup["id"] = group->Id();
@@ -165,6 +184,7 @@ namespace domain {
     inline void to_json(nlohmann::json& json, const Group& group) {
         json["name"] = group.Name();
         json["region"] = group.Region();
+        json["conference"] = group.Conference();
         json["tournamentId"] = group.TournamentId();
         if (!group.Id().empty()) {
             json["id"] = group.Id();

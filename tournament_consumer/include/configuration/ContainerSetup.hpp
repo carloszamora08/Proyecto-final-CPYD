@@ -19,6 +19,7 @@
 #include "persistence/configuration/PostgresConnectionProvider.hpp"
 #include "cms/QueueMessageListener.hpp"
 #include "cms/GroupAddTeamListener.hpp"
+#include "cms/ScoreUpdateListener.hpp"
 #include "delegate/MatchDelegate.hpp"
 
 namespace config {
@@ -61,12 +62,15 @@ namespace config {
             .as<IMatchRepository>()
             .singleInstance();
 
-        // ✅ AGREGADO: Registrar MatchDelegate
+        // Registrar MatchDelegate
         builder.registerType<MatchDelegate>()
             .singleInstance();
 
-        // ✅ CORREGIDO: Registrar GroupAddTeamListener con sus dependencias
+        // Registrar GroupAddTeamListener con sus dependencias
         builder.registerType<GroupAddTeamListener>()
+            .singleInstance();
+
+        builder.registerType<ScoreUpdateListener>()
             .singleInstance();
 
         return builder.build();

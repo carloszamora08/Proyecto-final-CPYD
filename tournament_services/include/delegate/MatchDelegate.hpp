@@ -37,21 +37,13 @@ public:
                         std::string_view matchId,
                         const domain::Score& score) override;
 
-    std::expected<std::vector<std::string>, std::string>
-        CreateRegularPhaseMatches(std::string_view tournamentId) override;
-
-    std::expected<std::vector<std::string>, std::string>
-        CreatePlayoffMatches(std::string_view tournamentId) override;
-
 private:
     // Validaciones
     bool ValidateScore(const domain::Score& score,
                       const domain::Tournament& tournament,
                       domain::RoundType round);
 
-    bool AllRegularMatchesPlayed(std::string_view tournamentId);
-
-    // ✅ CAMBIO: GetStrategy ahora recibe TournamentType
+    // GetStrategy ahora recibe TournamentType
     std::shared_ptr<IMatchStrategy> GetStrategy(const domain::TournamentType& tournamentType);
 };
 

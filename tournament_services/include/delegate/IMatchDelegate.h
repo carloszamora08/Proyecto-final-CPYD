@@ -27,13 +27,6 @@ public:
                         std::string_view matchId,
                         const domain::Score& score) = 0;
 
-    // Crear matches para la primera fase (llamado por el event consumer)
-    virtual std::expected<std::vector<std::string>, std::string>
-        CreateRegularPhaseMatches(std::string_view tournamentId) = 0;
-
-    // Crear matches de playoffs (llamado después de la fase regular)
-    virtual std::expected<std::vector<std::string>, std::string>
-        CreatePlayoffMatches(std::string_view tournamentId) = 0;
 };
 
 #endif // TOURNAMENTS_IMATCHDELEGATE_H

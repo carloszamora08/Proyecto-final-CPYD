@@ -7,7 +7,7 @@
 
 namespace domain {
     enum class Winner { HOME, VISITOR };
-    enum class RoundType { REGULAR, QUARTERFINALS, SEMIFINALS, FINAL };
+    enum class RoundType { REGULAR, WILDCARD, DIVISIONAL, CHAMPIONSHIP, SUPERBOWL };
 
     struct Score {
         int homeTeamScore;
@@ -25,57 +25,54 @@ namespace domain {
         }
     };
 
+    struct Home {
+        std::string id;
+        std::string name;
+    };
+
+    struct Visitor {
+        std::string id;
+        std::string name;
+    };
+
     class Match {
         std::string id;
-        std::string homeTeamId;
-        std::string homeTeamName;
-        std::string visitorTeamId;
-        std::string visitorTeamName;
+        Home home;
+        Visitor visitor;
         std::optional<Score> score;
         RoundType round;
         std::string tournamentId;
 
         // For tournament bracket tracking
         std::string winnerNextMatchId;
-        std::string loserNextMatchId;
 
     public:
         Match() = default;
 
-        explicit Match(const std::string& tournamentId, const std::string& homeId = "",
-                      const std::string& homeName = "", const std::string& visitorId = "",
-                      const std::string& visitorName = "", RoundType roundType = RoundType::REGULAR) {
+        explicit Match(const std::string& tournamentId, const Home& home, const Visitor& visitor, RoundType roundType = RoundType::REGULAR) {
             this->tournamentId = tournamentId;
-            this->homeTeamId = homeId;
-            this->homeTeamName = homeName;
-            this->visitorTeamId = visitorId;
-            this->visitorTeamName = visitorName;
+            this->home = home;
+            this->visitor = visitor;
             this->round = roundType;
         }
 
         // Getters const
         [[nodiscard]] std::string Id() const { return id; }
-        [[nodiscard]] std::string HomeTeamId() const { return homeTeamId; }
-        [[nodiscard]] std::string HomeTeamName() const { return homeTeamName; }
-        [[nodiscard]] std::string VisitorTeamId() const { return visitorTeamId; }
-        [[nodiscard]] std::string VisitorTeamName() const { return visitorTeamName; }
+        [[nodiscard]] Home Home() const { return home; }
+        [[nodiscard]] Visitor Visitor() const { return visitor; }
         [[nodiscard]] std::optional<Score> MatchScore() const { return score; }
         [[nodiscard]] RoundType Round() const { return round; }
         [[nodiscard]] std::string TournamentId() const { return tournamentId; }
         [[nodiscard]] std::string WinnerNextMatchId() const { return winnerNextMatchId; }
-        [[nodiscard]] std::string LoserNextMatchId() const { return loserNextMatchId; }
 
         // Getters no-const
         std::string& Id() { return id; }
-        std::string& HomeTeamId() { return homeTeamId; }
-        std::string& HomeTeamName() { return homeTeamName; }
-        std::string& VisitorTeamId() { return visitorTeamId; }
-        std::string& VisitorTeamName() { return visitorTeamName; }
+        domain::Home& Home() { return home; }
+        domain::Visitor& Visitor() { return visitor; }
         std::optional<Score>& MatchScore() { return score; }
         RoundType& Round() { return round; }
         std::string& TournamentId() { return tournamentId; }
         std::string& WinnerNextMatchId() { return winnerNextMatchId; }
-        std::string& LoserNextMatchId() { return loserNextMatchId; }
 
         [[nodiscard]] bool IsPlayed() const { return score.has_value(); }
     };
@@ -92,21 +89,43 @@ namespace domain {
         j.at("visitor").get_to(s.visitorTeamScore);
     }
 
+    // Home serialization
+    inline void to_json(nlohmann::json& j, const Home& h) {
+        j = nlohmann::json{{"id", h.id}, {"name", h.name}};
+    }
+
+    inline void from_json(const nlohmann::json& j, Home& h) {
+        j.at("id").get_to(h.id);
+        j.at("name").get_to(h.name);
+    }
+
+    // Visitor serialization
+    inline void to_json(nlohmann::json& j, const Visitor& v) {
+        j = nlohmann::json{{"id", v.id}, {"name", v.name}};
+    }
+
+    inline void from_json(const nlohmann::json& j, Visitor& v) {
+        j.at("id").get_to(v.id);
+        j.at("name").get_to(v.name);
+    }
+
     // RoundType helper functions
     inline std::string roundTypeToString(RoundType round) {
         switch (round) {
             case RoundType::REGULAR: return "regular";
-            case RoundType::QUARTERFINALS: return "quarterfinals";
-            case RoundType::SEMIFINALS: return "semifinals";
-            case RoundType::FINAL: return "final";
+            case RoundType::WILDCARD: return "wild card";
+            case RoundType::DIVISIONAL: return "divisional";
+            case RoundType::CHAMPIONSHIP: return "championship";
+            case RoundType::SUPERBOWL: return "super bowl";
         }
         return "regular";
     }
 
     inline RoundType stringToRoundType(const std::string& str) {
-        if (str == "quarterfinals") return RoundType::QUARTERFINALS;
-        if (str == "semifinals") return RoundType::SEMIFINALS;
-        if (str == "final") return RoundType::FINAL;
+        if (str == "wild card") return RoundType::WILDCARD;
+        if (str == "divisional") return RoundType::DIVISIONAL;
+        if (str == "championship") return RoundType::CHAMPIONSHIP;
+        if (str == "super bowl") return RoundType::SUPERBOWL;
         return RoundType::REGULAR;
     }
 
@@ -114,10 +133,8 @@ namespace domain {
     inline void to_json(nlohmann::json& json, const Match& match) {
         json = {
             {"tournamentId", match.TournamentId()},
-            {"homeTeamId", match.HomeTeamId()},
-            {"homeTeamName", match.HomeTeamName()},
-            {"visitorTeamId", match.VisitorTeamId()},
-            {"visitorTeamName", match.VisitorTeamName()},
+            {"home", match.Home()},
+            {"visitor", match.Visitor()},
             {"round", roundTypeToString(match.Round())}
         };
 
@@ -132,9 +149,6 @@ namespace domain {
         if (!match.WinnerNextMatchId().empty()) {
             json["winnerNextMatchId"] = match.WinnerNextMatchId();
         }
-        if (!match.LoserNextMatchId().empty()) {
-            json["loserNextMatchId"] = match.LoserNextMatchId();
-        }
     }
 
     inline void from_json(const nlohmann::json& json, Match& match) {
@@ -144,18 +158,13 @@ namespace domain {
         if (json.contains("tournamentId")) {
             match.TournamentId() = json["tournamentId"].get<std::string>();
         }
-        if (json.contains("homeTeamId")) {
-            match.HomeTeamId() = json["homeTeamId"].get<std::string>();
+
+        if (json.contains("home") && json["home"].is_object()) {
+            Home home;
+            json["home"].get_to(home);
+            match.Home() = home;
         }
-        if (json.contains("homeTeamName")) {
-            match.HomeTeamName() = json["homeTeamName"].get<std::string>();
-        }
-        if (json.contains("visitorTeamId")) {
-            match.VisitorTeamId() = json["visitorTeamId"].get<std::string>();
-        }
-        if (json.contains("visitorTeamName")) {
-            match.VisitorTeamName() = json["visitorTeamName"].get<std::string>();
-        }
+        
         if (json.contains("round")) {
             match.Round() = stringToRoundType(json["round"].get<std::string>());
         }
@@ -169,19 +178,14 @@ namespace domain {
         if (json.contains("winnerNextMatchId")) {
             match.WinnerNextMatchId() = json["winnerNextMatchId"].get<std::string>();
         }
-        if (json.contains("loserNextMatchId")) {
-            match.LoserNextMatchId() = json["loserNextMatchId"].get<std::string>();
-        }
     }
 
     // Serialization for shared_ptr<Match>
     inline void to_json(nlohmann::json& json, const std::shared_ptr<Match>& match) {
         json = {
             {"tournamentId", match->TournamentId()},
-            {"homeTeamId", match->HomeTeamId()},
-            {"homeTeamName", match->HomeTeamName()},
-            {"visitorTeamId", match->VisitorTeamId()},
-            {"visitorTeamName", match->VisitorTeamName()},
+            {"home", match->Home()},
+            {"visitor", match->Visitor()},
             {"round", roundTypeToString(match->Round())}
         };
 
@@ -195,9 +199,6 @@ namespace domain {
 
         if (!match->WinnerNextMatchId().empty()) {
             json["winnerNextMatchId"] = match->WinnerNextMatchId();
-        }
-        if (!match->LoserNextMatchId().empty()) {
-            json["loserNextMatchId"] = match->LoserNextMatchId();
         }
     }
 

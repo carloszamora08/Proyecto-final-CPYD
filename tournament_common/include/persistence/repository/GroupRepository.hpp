@@ -25,6 +25,7 @@ public:
     std::expected<std::vector<std::shared_ptr<domain::Group>>, std::string> FindByTournamentId(const std::string_view& tournamentId) override;
     std::expected<std::shared_ptr<domain::Group>, std::string> FindByTournamentIdAndGroupId(const std::string_view& tournamentId, const std::string_view& groupId) override;
     std::expected<std::shared_ptr<domain::Group>, std::string> FindByTournamentIdAndTeamId(const std::string_view& tournamentId, const std::string_view& teamId) override;
+    std::expected<std::vector<std::shared_ptr<domain::Group>>, std::string> FindByTournamentIdAndConference(const std::string_view& tournamentId, const std::string_view& conference) override;
     std::expected<void, std::string> UpdateGroupAddTeam(const std::string_view& groupId, const std::shared_ptr<domain::Team> & team) override;
 };
 

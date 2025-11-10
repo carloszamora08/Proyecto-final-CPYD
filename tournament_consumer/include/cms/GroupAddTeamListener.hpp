@@ -11,7 +11,6 @@ class GroupAddTeamListener : public QueueMessageListener {
     void processMessage(const std::string& message) override;
 
 public:
-    // ✅ UN SOLO CONSTRUCTOR que recibe ambas dependencias
     GroupAddTeamListener(const std::shared_ptr<ConnectionManager>& connectionManager,
                         const std::shared_ptr<MatchDelegate>& matchDelegate);
     ~GroupAddTeamListener() override;
@@ -42,7 +41,7 @@ inline void GroupAddTeamListener::processMessage(const std::string& message) {
         std::println("Adding team {} to group {} in tournament {}",
                      teamId, groupId, tournamentId);
 
-        // ✅ Verificar que matchDelegate no sea nullptr antes de usarlo
+        // Verificar que matchDelegate no sea nullptr antes de usarlo
         if (!matchDelegate) {
             std::println("ERROR: matchDelegate is null!");
             return;
