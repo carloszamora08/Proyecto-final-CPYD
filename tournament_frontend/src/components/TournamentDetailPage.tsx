@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { tournamentsApi, groupsApi, matchesApi, teamsApi } from '../services/api';
 import type { Tournament, Group, Match, Team } from '../types';
+import RankingsTab from './RankingsTab';
 
 export default function TournamentDetailPage() {
     const { tournamentId } = useParams<{ tournamentId: string }>();
@@ -12,7 +13,7 @@ export default function TournamentDetailPage() {
     const [allTeams, setAllTeams] = useState<Team[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [activeTab, setActiveTab] = useState<'groups' | 'matches'>('groups');
+    const [activeTab, setActiveTab] = useState<'groups' | 'matches' | 'rankings'>('groups');
 
     // Modals
     const [showGroupModal, setShowGroupModal] = useState(false);
@@ -118,7 +119,14 @@ export default function TournamentDetailPage() {
                 <button onClick={() => navigate('/')} className="btn" style={{ marginBottom: '1rem' }}>
                     ← Back to Tournaments
                 </button>
-                <h2>{tournament.name}</h2>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <h2>{tournament.name}</h2>
+                    {tournament.finished === 'yes' && (
+                        <span className="badge badge-yellow" style={{ fontSize: '1rem', padding: '0.5rem 1rem' }}>
+                Tournament Finished
+            </span>
+                    )}
+                </div>
                 <p style={{ color: '#6b7280' }}>Year: {tournament.year}</p>
             </div>
 
@@ -153,6 +161,20 @@ export default function TournamentDetailPage() {
                 >
                     Matches ({matches.length})
                 </button>
+                <button
+                    onClick={() => setActiveTab('rankings')}
+                    style={{
+                        padding: '1rem',
+                        border: 'none',
+                        background: 'none',
+                        borderBottom: activeTab === 'rankings' ? '2px solid #3b82f6' : 'none',
+                        color: activeTab === 'rankings' ? '#3b82f6' : '#6b7280',
+                        fontWeight: 500,
+                        cursor: 'pointer'
+                    }}
+                >
+                    Rankings
+                </button>
             </div>
 
             {activeTab === 'groups' && (
@@ -182,6 +204,7 @@ export default function TournamentDetailPage() {
                                         setShowTeamModal(true);
                                     }}
                                     style={{ marginTop: '1rem', fontSize: '0.875rem', padding: '0.5rem 1rem', width: '100%' }}
+                                    disabled={tournament.finished === 'yes'}
                                 >
                                     Add Teams
                                 </button>
@@ -217,13 +240,17 @@ export default function TournamentDetailPage() {
                                 className="btn btn-primary"
                                 onClick={() => openScoreModal(match)}
                                 style={{ marginTop: '1rem', fontSize: '0.875rem', padding: '0.5rem 1rem', width: '100%' }}
-                                disabled={!match.homeTeamId || !match.visitorTeamId}
+                                disabled={!match.homeTeamId || !match.visitorTeamId || tournament.finished === 'yes'}
                             >
                                 {match.score ? 'Update Score' : 'Enter Score'}
                             </button>
                         </div>
                     ))}
                 </div>
+            )}
+
+            {activeTab === 'rankings' && (
+                <RankingsTab matches={matches} groups={groups} />
             )}
 
             {/* Group Modal */}

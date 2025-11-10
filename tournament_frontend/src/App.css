@@ -232,3 +232,13 @@ body {
   background: #fef3c7;
   color: #92400e;
 }
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.badge-yellow {
+  background: #fef3c7;
+  color: #92400e;
+}

@@ -16,6 +16,7 @@ export interface Tournament {
     name: string;
     year: number;
     format: TournamentFormat;
+    finished: string;
 }
 
 export interface Group {
