@@ -49,7 +49,7 @@ TEST_F(GroupControllerTest, CreateGroupSuccessTest) {
             )
         );
 
-    nlohmann::json groupRequestBody = {{"id", "new-id"}, {"name", "new name"}, {"region", "new region"}, {"teams", nlohmann::json::array()}};
+    nlohmann::json groupRequestBody = {{"id", "new-id"}, {"name", "new name"}, {"region", "new region"}, {"conference", "AFC"}, {"teams", nlohmann::json::array()}};
     crow::request groupRequest;
     groupRequest.body = groupRequestBody.dump();
     std::string tournamentId = "tournament-id";
@@ -61,6 +61,8 @@ TEST_F(GroupControllerTest, CreateGroupSuccessTest) {
     EXPECT_EQ(capturedGroup.Id(), groupRequestBody.at("id").get<std::string>());
     EXPECT_EQ(capturedGroup.Name(), groupRequestBody.at("name").get<std::string>());
     EXPECT_EQ(capturedGroup.Region(), groupRequestBody.at("region").get<std::string>());
+    domain::Conference expectedConference = groupRequestBody.at("conference").get<domain::Conference>();
+    EXPECT_EQ(capturedGroup.Conference(), expectedConference);
     EXPECT_EQ(capturedGroup.Teams().size(), 0);
     EXPECT_EQ(response.code, crow::CREATED);
     EXPECT_EQ(response.get_header_value("location"), "new-id");
@@ -78,7 +80,7 @@ TEST_F(GroupControllerTest, CreateGroupDBInsertionFailTest) {
             )
         );
 
-    nlohmann::json groupRequestBody = {{"id", "existing-id"}, {"name", "existing name"}, {"region", "existing region"}, {"teams", nlohmann::json::array()}};
+    nlohmann::json groupRequestBody = {{"id", "existing-id"}, {"name", "existing name"}, {"region", "existing region"}, {"conference", "AFC"}, {"teams", nlohmann::json::array()}};
     crow::request groupRequest;
     groupRequest.body = groupRequestBody.dump();
     std::string tournamentId = "tournament-id";
@@ -90,6 +92,8 @@ TEST_F(GroupControllerTest, CreateGroupDBInsertionFailTest) {
     EXPECT_EQ(capturedGroup.Id(), groupRequestBody.at("id").get<std::string>());
     EXPECT_EQ(capturedGroup.Name(), groupRequestBody.at("name").get<std::string>());
     EXPECT_EQ(capturedGroup.Region(), groupRequestBody.at("region").get<std::string>());
+    domain::Conference expectedConference = groupRequestBody.at("conference").get<domain::Conference>();
+    EXPECT_EQ(capturedGroup.Conference(), expectedConference);
     EXPECT_EQ(capturedGroup.Teams().size(), 0);
     EXPECT_EQ(response.code, crow::CONFLICT);
     EXPECT_EQ(response.body, "Group insertion failed");
@@ -99,7 +103,7 @@ TEST_F(GroupControllerTest, CreateGroupInvalidTournamentIDTest) {
     EXPECT_CALL(*groupDelegateMock, CreateGroup(::testing::_, ::testing::_))
         .Times(0);
 
-    nlohmann::json groupRequestBody = {{"id", "new-id"}, {"name", "new name"}, {"region", "new region"}, {"teams", nlohmann::json::array()}};
+    nlohmann::json groupRequestBody = {{"id", "new-id"}, {"name", "new name"}, {"region", "new region"}, {"conference", "AFC"}, {"teams", nlohmann::json::array()}};
     crow::request groupRequest;
     groupRequest.body = groupRequestBody.dump();
     std::string tournamentId = "bad tournament-id";
@@ -145,7 +149,7 @@ TEST_F(GroupControllerTest, GetGroupSuccessTest) {
     std::string capturedTournamentId;
     std::string capturedGroupId;
 
-    nlohmann::json body = {{"id", "read-group-id"}, {"name", "read name"}, {"region", "read region"}, {"tournamentId", "read-tournament-id"}, {"teams", nlohmann::json::array()}};
+    nlohmann::json body = {{"id", "read-group-id"}, {"name", "read name"}, {"region", "read region"}, {"conference", "AFC"}, {"tournamentId", "read-tournament-id"}, {"teams", nlohmann::json::array()}};
     auto group = std::make_shared<domain::Group>(body);
 
     EXPECT_CALL(*groupDelegateMock, GetGroup(::testing::_, ::testing::_))
@@ -168,6 +172,7 @@ TEST_F(GroupControllerTest, GetGroupSuccessTest) {
     EXPECT_EQ(bodyJson["id"], body.at("id").get<std::string>());
     EXPECT_EQ(bodyJson["name"], body.at("name").get<std::string>());
     EXPECT_EQ(bodyJson["region"], body.at("region").get<std::string>());
+    EXPECT_EQ(bodyJson["conference"], body.at("conference").get<std::string>());
     EXPECT_EQ(bodyJson["tournamentId"], body.at("tournamentId").get<std::string>());
     EXPECT_EQ(bodyJson["teams"], body["teams"]);
     EXPECT_TRUE(bodyJson["teams"].is_array());
@@ -245,10 +250,10 @@ TEST_F(GroupControllerTest, GetGroupsSuccessTest) {
     std::string capturedTournamentId;
     std::vector<std::shared_ptr<domain::Group>> groups;
 
-    nlohmann::json body1 = {{"id", "first-group-id"}, {"name", "first name"}, {"region", "first region"}, {"tournamentId", "first-tournament-id"}, {"teams", nlohmann::json::array()}};
+    nlohmann::json body1 = {{"id", "first-group-id"}, {"name", "first name"}, {"region", "first region"}, {"conference", "AFC"}, {"tournamentId", "first-tournament-id"}, {"teams", nlohmann::json::array()}};
     groups.push_back(std::make_shared<domain::Group>(body1));
 
-    nlohmann::json body2 = {{"id", "second-group-id"}, {"name", "second name"}, {"region", "second region"}, {"tournamentId", "second-tournament-id"}, {"teams", nlohmann::json::array()}};
+    nlohmann::json body2 = {{"id", "second-group-id"}, {"name", "second name"}, {"region", "second region"}, {"conference", "AFC"}, {"tournamentId", "second-tournament-id"}, {"teams", nlohmann::json::array()}};
     groups.push_back(std::make_shared<domain::Group>(body2));
 
     EXPECT_CALL(*groupDelegateMock, GetGroups(::testing::_))
@@ -269,12 +274,14 @@ TEST_F(GroupControllerTest, GetGroupsSuccessTest) {
     EXPECT_EQ(bodyJson[0]["id"], body1.at("id").get<std::string>());
     EXPECT_EQ(bodyJson[0]["name"], body1.at("name").get<std::string>());
     EXPECT_EQ(bodyJson[0]["region"], body1.at("region").get<std::string>());
+    EXPECT_EQ(bodyJson[0]["conference"], body1.at("conference").get<std::string>());
     EXPECT_EQ(bodyJson[0]["tournamentId"], body1.at("tournamentId").get<std::string>());
     EXPECT_EQ(bodyJson[0]["teams"], body1["teams"]);
     EXPECT_TRUE(bodyJson[0]["teams"].is_array());
     EXPECT_EQ(bodyJson[1]["id"], body2.at("id").get<std::string>());
     EXPECT_EQ(bodyJson[1]["name"], body2.at("name").get<std::string>());
     EXPECT_EQ(bodyJson[1]["region"], body2.at("region").get<std::string>());
+    EXPECT_EQ(bodyJson[1]["conference"], body2.at("conference").get<std::string>());
     EXPECT_EQ(bodyJson[1]["tournamentId"], body2.at("tournamentId").get<std::string>());
     EXPECT_EQ(bodyJson[1]["teams"], body2["teams"]);
     EXPECT_TRUE(bodyJson[1]["teams"].is_array());
@@ -346,7 +353,7 @@ TEST_F(GroupControllerTest, UpdateGroupSuccessTest) {
             )
         );
 
-    nlohmann::json groupRequestBody = {{"id", "updated-group-id"}, {"name", "updated name"}, {"region", "updated region"}, {"tournamentId", "updated-tournament-id"}, {"teams", nlohmann::json::array()}};
+    nlohmann::json groupRequestBody = {{"id", "updated-group-id"}, {"name", "updated name"}, {"region", "updated region"}, {"conference", "AFC"}, {"tournamentId", "updated-tournament-id"}, {"teams", nlohmann::json::array()}};
     crow::request groupRequest;
     groupRequest.body = groupRequestBody.dump();
     std::string tournamentId = "updated-tournament-id";
@@ -359,6 +366,8 @@ TEST_F(GroupControllerTest, UpdateGroupSuccessTest) {
     EXPECT_EQ(capturedGroup.Id(), groupRequestBody.at("id").get<std::string>());
     EXPECT_EQ(capturedGroup.Name(), groupRequestBody.at("name").get<std::string>());
     EXPECT_EQ(capturedGroup.Region(), groupRequestBody.at("region").get<std::string>());
+    domain::Conference expectedConference = groupRequestBody.at("conference").get<domain::Conference>();
+    EXPECT_EQ(capturedGroup.Conference(), expectedConference);
     EXPECT_EQ(capturedGroup.TournamentId(), groupRequestBody.at("tournamentId").get<std::string>());
     EXPECT_EQ(capturedGroup.Teams().size(), 0);
     EXPECT_TRUE(capturedUpdateTeams);
@@ -379,7 +388,7 @@ TEST_F(GroupControllerTest, UpdateGroupFailTest) {
             )
         );
 
-    nlohmann::json groupRequestBody = {{"id", "non-existing-group-id"}, {"name", "non-existing name"}, {"region", "non-existing region"}, {"tournamentId", "non-existing-tournament-id"}, {"teams", nlohmann::json::array()}};
+    nlohmann::json groupRequestBody = {{"id", "non-existing-group-id"}, {"name", "non-existing name"}, {"region", "non-existing region"}, {"conference", "AFC"}, {"tournamentId", "non-existing-tournament-id"}, {"teams", nlohmann::json::array()}};
     crow::request groupRequest;
     groupRequest.body = groupRequestBody.dump();
     std::string tournamentId = "non-existing-tournament-id";
@@ -392,6 +401,8 @@ TEST_F(GroupControllerTest, UpdateGroupFailTest) {
     EXPECT_EQ(capturedGroup.Id(), groupRequestBody.at("id").get<std::string>());
     EXPECT_EQ(capturedGroup.Name(), groupRequestBody.at("name").get<std::string>());
     EXPECT_EQ(capturedGroup.Region(), groupRequestBody.at("region").get<std::string>());
+    domain::Conference expectedConference = groupRequestBody.at("conference").get<domain::Conference>();
+    EXPECT_EQ(capturedGroup.Conference(), expectedConference);
     EXPECT_EQ(capturedGroup.TournamentId(), groupRequestBody.at("tournamentId").get<std::string>());
     EXPECT_EQ(capturedGroup.Teams().size(), 0);
     EXPECT_TRUE(capturedUpdateTeams);
@@ -403,7 +414,7 @@ TEST_F(GroupControllerTest, UpdateGroupInvalidTournamentIDTest) {
     EXPECT_CALL(*groupDelegateMock, UpdateGroup(::testing::_, ::testing::_, ::testing::_))
         .Times(0);
 
-    nlohmann::json groupRequestBody = {{"id", "group-id"}, {"name", "name"}, {"region", "region"}, {"tournamentId", "tournament-id"}, {"teams", nlohmann::json::array()}};
+    nlohmann::json groupRequestBody = {{"id", "group-id"}, {"name", "name"}, {"region", "region"}, {"conference", "AFC"}, {"tournamentId", "tournament-id"}, {"teams", nlohmann::json::array()}};
     crow::request groupRequest;
     groupRequest.body = groupRequestBody.dump();
     std::string tournamentId = "bad tournament-id";
@@ -420,7 +431,7 @@ TEST_F(GroupControllerTest, UpdateGroupInvalidGroupIDTest) {
     EXPECT_CALL(*groupDelegateMock, UpdateGroup(::testing::_, ::testing::_, ::testing::_))
         .Times(0);
 
-    nlohmann::json groupRequestBody = {{"id", "bad group-id"}, {"name", "name"}, {"region", "region"}, {"tournamentId", "tournament-id"}, {"teams", nlohmann::json::array()}};
+    nlohmann::json groupRequestBody = {{"id", "bad group-id"}, {"name", "name"}, {"region", "region"}, {"conference", "AFC"}, {"tournamentId", "tournament-id"}, {"teams", nlohmann::json::array()}};
     crow::request groupRequest;
     groupRequest.body = groupRequestBody.dump();
     std::string tournamentId = "tournament-id";
@@ -472,7 +483,8 @@ TEST_F(GroupControllerTest, UpdateGroupOverflowingGroupTest) {
     nlohmann::json groupRequestBody = {
         {"id", "group-id"}, 
         {"name", "name"}, 
-        {"region", "region"}, 
+        {"region", "region"},
+        {"conference", "AFC"},
         {"tournamentId", "tournament-id"}, 
         {"teams", nlohmann::json::array({
             {{"id", "team-1"}, {"name", "Team One"}},
@@ -498,7 +510,7 @@ TEST_F(GroupControllerTest, UpdateGroupDBFailTest) {
     EXPECT_CALL(*groupDelegateMock, UpdateGroup(::testing::_, ::testing::_, ::testing::_))
         .WillOnce(testing::Return(std::unexpected<std::string>("Database connection failed")));
 
-    nlohmann::json groupRequestBody = {{"id", "group-id"}, {"name", "name"}, {"region", "region"}, {"tournamentId", "tournament-id"}, {"teams", nlohmann::json::array()}};
+    nlohmann::json groupRequestBody = {{"id", "group-id"}, {"name", "name"}, {"region", "region"}, {"conference", "AFC"}, {"tournamentId", "tournament-id"}, {"teams", nlohmann::json::array()}};
     crow::request groupRequest;
     groupRequest.body = groupRequestBody.dump();
     std::string tournamentId = "tournament-id";
@@ -695,7 +707,7 @@ TEST_F(GroupControllerTest, UpdateTeamsOverflowingGroupTest) {
 
     testing::Mock::VerifyAndClearExpectations(&groupDelegateMock);
 
-    EXPECT_EQ(response.code, 422);
+    EXPECT_EQ(response.code, 409);
     EXPECT_EQ(response.body, "Group exceeds maximum teams capacity");
 }
 
@@ -712,7 +724,7 @@ TEST_F(GroupControllerTest, UpdateTeamsTeamNotFoundTest) {
 
     testing::Mock::VerifyAndClearExpectations(&groupDelegateMock);
 
-    EXPECT_EQ(response.code, 422);
+    EXPECT_EQ(response.code, 409);
     EXPECT_EQ(response.body, "Team not found");
 }
 

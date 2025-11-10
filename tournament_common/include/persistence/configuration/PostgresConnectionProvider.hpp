@@ -35,6 +35,8 @@ public:
             connectionPool.back()->prepare("insert_group", "insert into GROUPS (tournament_id, document) values($1, $2) RETURNING id");
             connectionPool.back()->prepare("select_group_by_tournamentid_groupid", "select * from GROUPS where tournament_id = $1 and id = $2");
             connectionPool.back()->prepare("select_groups_by_tournament", "select * from GROUPS where tournament_id = $1");
+            connectionPool.back()->prepare("select_groups_by_tournament_conference", 
+                "select * from GROUPS where tournament_id = $1 and document->>'conference' = $2");
             connectionPool.back()->prepare("select_group_in_tournament", R"(
                 select * from GROUPS
                 where tournament_id = $1
@@ -49,6 +51,7 @@ public:
                     where id = $1
                 RETURNING id
             )");
+
             connectionPool.back()->prepare("insert_match",
                 "insert into MATCHES (document) values($1) RETURNING id");
             connectionPool.back()->prepare("select_match_by_id",

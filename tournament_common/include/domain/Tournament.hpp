@@ -15,11 +15,13 @@ namespace domain {
     class TournamentFormat {
         int numberOfGroups;
         int maxTeamsPerGroup;
+        int maxGroupsPerConference;
         TournamentType type;
     public:
-        TournamentFormat(int numberOfGroups = 8, int maxTeamsPerGroup = 4, TournamentType tournamentType = TournamentType::NFL) {
+        TournamentFormat(int numberOfGroups = 8, int maxTeamsPerGroup = 4, int maxGroupsPerConference = 4, TournamentType tournamentType = TournamentType::NFL) {
             this->numberOfGroups = numberOfGroups;
             this->maxTeamsPerGroup = maxTeamsPerGroup;
+            this->maxGroupsPerConference = maxGroupsPerConference;
             this->type = tournamentType;
         }
 
@@ -38,6 +40,14 @@ namespace domain {
             return this->maxTeamsPerGroup;
         }
 
+        int MaxGroupsPerConference() const {
+            return this->maxGroupsPerConference;
+        }
+
+        int & MaxGroupsPerConference() {
+            return this->maxGroupsPerConference;
+        }
+
         TournamentType Type() const {
             return this->type;
         }
@@ -52,6 +62,7 @@ namespace domain {
         std::string id;
         std::string name;
         int year;
+        std::string finished;
         TournamentFormat format;
         std::vector<Group> groups;
         std::vector<Match> matches;
@@ -61,6 +72,7 @@ namespace domain {
             this->name = name;
             this->year = year;
             this->format = format;
+            finished = "no";
         }
 
         [[nodiscard]] std::string Id() const {
@@ -85,6 +97,14 @@ namespace domain {
 
         int& Year() {
             return this->year;
+        }
+
+        [[nodiscard]] std::string Finished() const {
+            return this->finished;
+        }
+
+        std::string& Finished() {
+            return this->finished;
         }
 
         [[nodiscard]] TournamentFormat Format() const {

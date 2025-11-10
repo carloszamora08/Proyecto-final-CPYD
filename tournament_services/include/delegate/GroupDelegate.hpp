@@ -51,6 +51,16 @@ inline std::expected<std::string, std::string> GroupDelegate::CreateGroup(const 
         return std::unexpected("Tournament has reached maximum number of groups");
     }
 
+    std::string conferenceStr = (group.Conference() == domain::Conference::AFC) ? "AFC" : "NFC";
+    const auto groupsInConference = groupRepository->FindByTournamentIdAndConference(tournamentId, conferenceStr);
+
+    if (!groupsInConference) {
+        return std::unexpected(groupsInConference.error());
+    }
+    if (groupsInConference.value().size() >= tournament.value()->Format().MaxGroupsPerConference()) {
+        return std::unexpected("Conference has reached maximum number of groups");
+    }
+
     domain::Group g = group;
     g.TournamentId() = tournament.value()->Id();
 
@@ -87,6 +97,22 @@ inline std::expected<void, std::string> GroupDelegate::UpdateGroup(const std::st
     const auto existingGroup = groupRepository->FindByTournamentIdAndGroupId(tournamentId, group.Id());
     if (!existingGroup) {
         return std::unexpected(existingGroup.error());
+    }
+
+    const auto tournament = tournamentRepository->ReadById(tournamentId.data());
+
+    if (!tournament) {
+        return std::unexpected(tournament.error());
+    }
+
+    std::string conferenceStr = (group.Conference() == domain::Conference::AFC) ? "AFC" : "NFC";
+    const auto groupsInConference = groupRepository->FindByTournamentIdAndConference(tournamentId, conferenceStr);
+
+    if (!groupsInConference) {
+        return std::unexpected(groupsInConference.error());
+    }
+    if (groupsInConference.value().size() >= tournament.value()->Format().MaxGroupsPerConference()) {
+        return std::unexpected("Conference has reached maximum number of groups");
     }
 
     domain::Group updatedGroup = group;

@@ -9,10 +9,8 @@ MatchRepository::MatchRepository(std::shared_ptr<IDbConnectionProvider> connecti
 std::expected<std::string, std::string> MatchRepository::Create(const domain::Match& entity) {
     nlohmann::json matchDoc;
     matchDoc["tournamentId"] = entity.TournamentId();
-    matchDoc["homeTeamId"] = entity.HomeTeamId();
-    matchDoc["homeTeamName"] = entity.HomeTeamName();
-    matchDoc["visitorTeamId"] = entity.VisitorTeamId();
-    matchDoc["visitorTeamName"] = entity.VisitorTeamName();
+    matchDoc["home"] = entity.Home();
+    matchDoc["visitor"] = entity.Visitor();
     matchDoc["round"] = static_cast<int>(entity.Round());
     
     if (entity.IsPlayed()) {
@@ -23,9 +21,6 @@ std::expected<std::string, std::string> MatchRepository::Create(const domain::Ma
     
     if (!entity.WinnerNextMatchId().empty()) {
         matchDoc["winnerNextMatchId"] = entity.WinnerNextMatchId();
-    }
-    if (!entity.LoserNextMatchId().empty()) {
-        matchDoc["loserNextMatchId"] = entity.LoserNextMatchId();
     }
 
     auto pooled = connectionProvider->Connection();
@@ -67,10 +62,8 @@ MatchRepository::ReadById(const std::string& id) {
         auto match = std::make_shared<domain::Match>();
         match->Id() = result.at(0)["id"].as<std::string>();
         match->TournamentId() = matchJson["tournamentId"];
-        match->HomeTeamId() = matchJson["homeTeamId"];
-        match->HomeTeamName() = matchJson["homeTeamName"];
-        match->VisitorTeamId() = matchJson["visitorTeamId"];
-        match->VisitorTeamName() = matchJson["visitorTeamName"];
+        match->Home() = matchJson["home"];
+        match->Visitor() = matchJson["visitor"];
         match->Round() = static_cast<domain::RoundType>(matchJson["round"].get<int>());
         
         if (matchJson.contains("score")) {
@@ -82,9 +75,6 @@ MatchRepository::ReadById(const std::string& id) {
         
         if (matchJson.contains("winnerNextMatchId")) {
             match->WinnerNextMatchId() = matchJson["winnerNextMatchId"];
-        }
-        if (matchJson.contains("loserNextMatchId")) {
-            match->LoserNextMatchId() = matchJson["loserNextMatchId"];
         }
 
         tx.commit();
@@ -103,10 +93,8 @@ std::expected<std::string, std::string>
 MatchRepository::Update(const std::string& id, const domain::Match& entity) {
     nlohmann::json matchDoc;
     matchDoc["tournamentId"] = entity.TournamentId();
-    matchDoc["homeTeamId"] = entity.HomeTeamId();
-    matchDoc["homeTeamName"] = entity.HomeTeamName();
-    matchDoc["visitorTeamId"] = entity.VisitorTeamId();
-    matchDoc["visitorTeamName"] = entity.VisitorTeamName();
+    matchDoc["home"] = entity.Home();
+    matchDoc["visitor"] = entity.Visitor();
     matchDoc["round"] = static_cast<int>(entity.Round());
     
     if (entity.IsPlayed()) {
@@ -117,9 +105,6 @@ MatchRepository::Update(const std::string& id, const domain::Match& entity) {
     
     if (!entity.WinnerNextMatchId().empty()) {
         matchDoc["winnerNextMatchId"] = entity.WinnerNextMatchId();
-    }
-    if (!entity.LoserNextMatchId().empty()) {
-        matchDoc["loserNextMatchId"] = entity.LoserNextMatchId();
     }
 
     auto pooled = connectionProvider->Connection();
@@ -190,10 +175,8 @@ MatchRepository::FindByTournamentId(const std::string_view& tournamentId) {
             auto match = std::make_shared<domain::Match>();
             match->Id() = row["id"].as<std::string>();
             match->TournamentId() = matchJson["tournamentId"];
-            match->HomeTeamId() = matchJson["homeTeamId"];
-            match->HomeTeamName() = matchJson["homeTeamName"];
-            match->VisitorTeamId() = matchJson["visitorTeamId"];
-            match->VisitorTeamName() = matchJson["visitorTeamName"];
+            match->Home() = matchJson["home"];
+            match->Visitor() = matchJson["visitor"];
             match->Round() = static_cast<domain::RoundType>(matchJson["round"].get<int>());
             
             if (matchJson.contains("score")) {
@@ -205,9 +188,6 @@ MatchRepository::FindByTournamentId(const std::string_view& tournamentId) {
             
             if (matchJson.contains("winnerNextMatchId")) {
                 match->WinnerNextMatchId() = matchJson["winnerNextMatchId"];
-            }
-            if (matchJson.contains("loserNextMatchId")) {
-                match->LoserNextMatchId() = matchJson["loserNextMatchId"];
             }
 
             matches.push_back(match);
@@ -262,10 +242,8 @@ MatchRepository::FindPlayedMatchesByTournamentId(const std::string_view& tournam
             auto match = std::make_shared<domain::Match>();
             match->Id() = row["id"].as<std::string>();
             match->TournamentId() = matchJson["tournamentId"];
-            match->HomeTeamId() = matchJson["homeTeamId"];
-            match->HomeTeamName() = matchJson["homeTeamName"];
-            match->VisitorTeamId() = matchJson["visitorTeamId"];
-            match->VisitorTeamName() = matchJson["visitorTeamName"];
+            match->Home() = matchJson["home"];
+            match->Visitor() = matchJson["visitor"];
             match->Round() = static_cast<domain::RoundType>(matchJson["round"].get<int>());
             
             domain::Score score;
@@ -275,9 +253,6 @@ MatchRepository::FindPlayedMatchesByTournamentId(const std::string_view& tournam
             
             if (matchJson.contains("winnerNextMatchId")) {
                 match->WinnerNextMatchId() = matchJson["winnerNextMatchId"];
-            }
-            if (matchJson.contains("loserNextMatchId")) {
-                match->LoserNextMatchId() = matchJson["loserNextMatchId"];
             }
 
             matches.push_back(match);
@@ -313,17 +288,12 @@ MatchRepository::FindPendingMatchesByTournamentId(const std::string_view& tourna
             auto match = std::make_shared<domain::Match>();
             match->Id() = row["id"].as<std::string>();
             match->TournamentId() = matchJson["tournamentId"];
-            match->HomeTeamId() = matchJson["homeTeamId"];
-            match->HomeTeamName() = matchJson["homeTeamName"];
-            match->VisitorTeamId() = matchJson["visitorTeamId"];
-            match->VisitorTeamName() = matchJson["visitorTeamName"];
+            match->Home() = matchJson["home"];
+            match->Visitor() = matchJson["visitor"];
             match->Round() = static_cast<domain::RoundType>(matchJson["round"].get<int>());
             
             if (matchJson.contains("winnerNextMatchId")) {
                 match->WinnerNextMatchId() = matchJson["winnerNextMatchId"];
-            }
-            if (matchJson.contains("loserNextMatchId")) {
-                match->LoserNextMatchId() = matchJson["loserNextMatchId"];
             }
 
             matches.push_back(match);

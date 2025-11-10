@@ -15,6 +15,7 @@ public:
     virtual std::expected<std::vector<std::shared_ptr<domain::Group>>, std::string> FindByTournamentId(const std::string_view& tournamentId) = 0;
     virtual std::expected<std::shared_ptr<domain::Group>, std::string> FindByTournamentIdAndGroupId(const std::string_view& tournamentId, const std::string_view& groupId) = 0;
     virtual std::expected<std::shared_ptr<domain::Group>, std::string> FindByTournamentIdAndTeamId(const std::string_view& tournamentId, const std::string_view& teamId) = 0;
+    virtual std::expected<std::vector<std::shared_ptr<domain::Group>>, std::string> FindByTournamentIdAndConference(const std::string_view& tournamentId, const std::string_view& conference) = 0;
     virtual std::expected<void, std::string> UpdateGroupAddTeam(const std::string_view& groupId, const std::shared_ptr<domain::Team> & team) = 0;
 };
 #endif //COMMON_IGROUPREPOSITORY_HPP

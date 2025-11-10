@@ -29,7 +29,7 @@
 #include "controller/GroupController.hpp"
 #include "controller/MatchController.hpp"
 #include "delegate/MatchDelegate.hpp"
-#include "domain/NFLStrategy.hpp"                    // <-- CAMBIO AQUÍ: domain/ en lugar de strategy/
+#include "domain/NFLStrategy.hpp"
 
 namespace config {
     inline std::shared_ptr<Hypodermic::Container> containerSetup() {

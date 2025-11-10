@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <map>
 #include <set>
+#include <print>
 
 class NFLStrategy : public IMatchStrategy {
 public:
@@ -23,41 +24,275 @@ public:
             }
         }
 
+        const auto& teams = groups[0]->Teams();
+        domain::Match match;
+        domain::Home home{teams[0].Id, teams[0].Name};
+        domain::Visitor visitor{teams[1].Id, teams[1].Name};
+        match.TournamentId() = tournament.Id();
+        match.Home() = home;
+        match.Visitor() = visitor;
+        match.Round() = domain::RoundType::REGULAR;
+        matches.push_back(match);
+
+        /*
         // Matches intragrupales
         for (const auto& group : groups) {
             const auto& teams = group->Teams();
             for (size_t i = 0; i < teams.size(); i++) {
                 for (size_t j = i + 1; j < teams.size(); j++) {
+                    // Parte 1
+                    domain::Match match;
+                    domain::Home home{teams[i].Id, teams[i].Name};
+                    domain::Visitor visitor{teams[j].Id, teams[j].Name};
+                    match.TournamentId() = tournament.Id();
+                    match.Home() = home;
+                    match.Visitor() = visitor;
+                    match.Round() = domain::RoundType::REGULAR;
+                    matches.push_back(match);
+
+                    // Parte 2
+                    domain::Match match2;
+                    domain::Home home2{teams[j].Id, teams[j].Name};
+                    domain::Visitor visitor2{teams[i].Id, teams[i].Name};
+                    match2.TournamentId() = tournament.Id();
+                    match2.Home() = home2;
+                    match2.Visitor() = visitor2;
+                    match2.Round() = domain::RoundType::REGULAR;
+                    matches.push_back(match2);
+                }
+            }
+        }
+
+        // Separate groups by conference
+        std::vector<std::shared_ptr<domain::Group>> afcGroups;
+        std::vector<std::shared_ptr<domain::Group>> nfcGroups;
+
+        for (const auto& group : groups) {
+            if (group->Conference() == domain::Conference::AFC) {
+                afcGroups.push_back(group);
+            } else {
+                nfcGroups.push_back(group);
+            }
+        }
+
+        std::vector<std::pair<int, int>> divisionPairs = {
+            {0, 1},  // Division 0 vs Division 1
+            {2, 3}   // Division 2 vs Division 3
+        };
+
+        // Process AFC divisions
+        for (const auto& [div1Index, div2Index] : divisionPairs) {
+            const auto& division1 = afcGroups[div1Index];
+            const auto& division2 = afcGroups[div2Index];
+            
+            const auto& teams1 = division1->Teams();
+            const auto& teams2 = division2->Teams();
+            
+            for (size_t i = 0; i < teams1.size(); i++) {                
+                for (size_t j = 0; j < teams2.size(); j++) {
+                    bool isHome = (i + j) % 2 == 0;
+                    
                     domain::Match match;
                     match.TournamentId() = tournament.Id();
-                    match.HomeTeamId() = teams[i].Id;
-                    match.HomeTeamName() = teams[i].Name;
-                    match.VisitorTeamId() = teams[j].Id;
-                    match.VisitorTeamName() = teams[j].Name;
                     match.Round() = domain::RoundType::REGULAR;
+                    
+                    if (isHome) {
+                        match.Home() = domain::Home{teams1[i].Id, teams1[i].Name};
+                        match.Visitor() = domain::Visitor{teams2[j].Id, teams2[j].Name};
+                    } else {
+                        match.Home() = domain::Home{teams2[j].Id, teams2[j].Name};
+                        match.Visitor() = domain::Visitor{teams1[i].Id, teams1[i].Name};
+                    }
+                    
                     matches.push_back(match);
                 }
             }
         }
 
-        // Matches intergrupales (mismo índice en diferentes grupos)
-        for (size_t teamPos = 0; teamPos < 4; teamPos++) {
-            for (size_t groupA = 0; groupA < groups.size(); groupA++) {
-                for (size_t groupB = groupA + 1; groupB < groups.size(); groupB++) {
-                    const auto& teamA = groups[groupA]->Teams()[teamPos];
-                    const auto& teamB = groups[groupB]->Teams()[teamPos];
-
+        // Process NFC divisions
+        for (const auto& [div1Index, div2Index] : divisionPairs) {
+            const auto& division1 = nfcGroups[div1Index];
+            const auto& division2 = nfcGroups[div2Index];
+            
+            const auto& teams1 = division1->Teams();
+            const auto& teams2 = division2->Teams();
+            
+            for (size_t i = 0; i < teams1.size(); i++) {                
+                for (size_t j = 0; j < teams2.size(); j++) {
+                    bool isHome = (i + j) % 2 == 0;
+                    
                     domain::Match match;
                     match.TournamentId() = tournament.Id();
-                    match.HomeTeamId() = teamA.Id;
-                    match.HomeTeamName() = teamA.Name;
-                    match.VisitorTeamId() = teamB.Id;
-                    match.VisitorTeamName() = teamB.Name;
                     match.Round() = domain::RoundType::REGULAR;
+                    
+                    if (isHome) {
+                        match.Home() = domain::Home{teams1[i].Id, teams1[i].Name};
+                        match.Visitor() = domain::Visitor{teams2[j].Id, teams2[j].Name};
+                    } else {
+                        match.Home() = domain::Home{teams2[j].Id, teams2[j].Name};
+                        match.Visitor() = domain::Visitor{teams1[i].Id, teams1[i].Name};
+                    }
+                    
                     matches.push_back(match);
                 }
             }
         }
+
+        // Interconference games
+
+        // Process AFC divisions
+        for (const auto& [div1Index, div2Index] : divisionPairs) {
+            const auto& division1 = afcGroups[div1Index];
+            const auto& division2 = nfcGroups[div2Index];
+            
+            const auto& teams1 = division1->Teams();
+            const auto& teams2 = division2->Teams();
+            
+            for (size_t i = 0; i < teams1.size(); i++) {                
+                for (size_t j = 0; j < teams2.size(); j++) {
+                    bool isHome = (i + j) % 2 == 0;
+                    
+                    domain::Match match;
+                    match.TournamentId() = tournament.Id();
+                    match.Round() = domain::RoundType::REGULAR;
+                    
+                    if (isHome) {
+                        match.Home() = domain::Home{teams1[i].Id, teams1[i].Name};
+                        match.Visitor() = domain::Visitor{teams2[j].Id, teams2[j].Name};
+                    } else {
+                        match.Home() = domain::Home{teams2[j].Id, teams2[j].Name};
+                        match.Visitor() = domain::Visitor{teams1[i].Id, teams1[i].Name};
+                    }
+                    
+                    matches.push_back(match);
+                }
+            }
+        }
+
+        // Process NFC divisions
+        for (const auto& [div1Index, div2Index] : divisionPairs) {
+            const auto& division1 = nfcGroups[div1Index];
+            const auto& division2 = afcGroups[div2Index];
+            
+            const auto& teams1 = division1->Teams();
+            const auto& teams2 = division2->Teams();
+            
+            for (size_t i = 0; i < teams1.size(); i++) {                
+                for (size_t j = 0; j < teams2.size(); j++) {
+                    bool isHome = (i + j) % 2 == 0;
+                    
+                    domain::Match match;
+                    match.TournamentId() = tournament.Id();
+                    match.Round() = domain::RoundType::REGULAR;
+                    
+                    if (isHome) {
+                        match.Home() = domain::Home{teams1[i].Id, teams1[i].Name};
+                        match.Visitor() = domain::Visitor{teams2[j].Id, teams2[j].Name};
+                    } else {
+                        match.Home() = domain::Home{teams2[j].Id, teams2[j].Name};
+                        match.Visitor() = domain::Visitor{teams1[i].Id, teams1[i].Name};
+                    }
+                    
+                    matches.push_back(match);
+                }
+            }
+        }
+
+        // AFC: Divisions 0,1 vs Divisions 2,3
+        for (int div1 : {0, 1}) {
+            for (int div2 : {2, 3}) {
+                const auto& division1 = afcGroups[div1];
+                const auto& division2 = afcGroups[div2];
+                const auto& teams1 = division1->Teams();
+                const auto& teams2 = division2->Teams();
+                
+                for (size_t teamIndex = 0; teamIndex < teams1.size(); teamIndex++) {
+                    // Alternate home/away: Div 0 gets home vs Div 2, away vs Div 3
+                    //                      Div 1 gets away vs Div 2, home vs Div 3
+                    bool div1IsHome = (div1 + div2) % 2 == 0;
+                    
+                    domain::Match match;
+                    match.TournamentId() = tournament.Id();
+                    match.Round() = domain::RoundType::REGULAR;
+                    
+                    if (div1IsHome) {
+                        match.Home() = domain::Home{teams1[teamIndex].Id, teams1[teamIndex].Name};
+                        match.Visitor() = domain::Visitor{teams2[teamIndex].Id, teams2[teamIndex].Name};
+                    } else {
+                        match.Home() = domain::Home{teams2[teamIndex].Id, teams2[teamIndex].Name};
+                        match.Visitor() = domain::Visitor{teams1[teamIndex].Id, teams1[teamIndex].Name};
+                    }
+                    
+                    matches.push_back(match);
+                }
+            }
+        }
+
+        // NFC: Same logic
+        for (int div1 : {0, 1}) {
+            for (int div2 : {2, 3}) {
+                const auto& division1 = nfcGroups[div1];
+                const auto& division2 = nfcGroups[div2];
+                const auto& teams1 = division1->Teams();
+                const auto& teams2 = division2->Teams();
+                
+                for (size_t teamIndex = 0; teamIndex < teams1.size(); teamIndex++) {
+                    bool div1IsHome = (div1 + div2) % 2 == 0;
+                    
+                    domain::Match match;
+                    match.TournamentId() = tournament.Id();
+                    match.Round() = domain::RoundType::REGULAR;
+                    
+                    if (div1IsHome) {
+                        match.Home() = domain::Home{teams1[teamIndex].Id, teams1[teamIndex].Name};
+                        match.Visitor() = domain::Visitor{teams2[teamIndex].Id, teams2[teamIndex].Name};
+                    } else {
+                        match.Home() = domain::Home{teams2[teamIndex].Id, teams2[teamIndex].Name};
+                        match.Visitor() = domain::Visitor{teams1[teamIndex].Id, teams1[teamIndex].Name};
+                    }
+                    
+                    matches.push_back(match);
+                }
+            }
+        }
+
+        // 17th game: interconference matchup based on division ranking
+        // Each AFC division plays against one NFC division they haven't played yet
+        std::map<int, int> interconferenceMatchups = {
+            {0, 0},  // AFC division 0 vs NFC division 0
+            {1, 1},  // AFC division 1 vs NFC division 1
+            {2, 2},  // AFC division 2 vs NFC division 2
+            {3, 3}   // AFC division 3 vs NFC division 3
+        };
+
+        // Process AFC vs NFC
+        for (const auto& [afcDivIndex, nfcDivIndex] : interconferenceMatchups) {
+            const auto& afcDivision = afcGroups[afcDivIndex];
+            const auto& nfcDivision = nfcGroups[nfcDivIndex];
+            
+            const auto& afcTeams = afcDivision->Teams();
+            const auto& nfcTeams = nfcDivision->Teams();
+            
+            for (size_t teamIndex = 0; teamIndex < afcTeams.size(); teamIndex++) {
+                // Alternate home/away: even ranked teams (0,2) get home, odd (1,3) get away
+                bool afcIsHome = (teamIndex % 2 == 0);
+                
+                domain::Match match;
+                match.TournamentId() = tournament.Id();
+                match.Round() = domain::RoundType::REGULAR;
+                
+                if (afcIsHome) {
+                    match.Home() = domain::Home{afcTeams[teamIndex].Id, afcTeams[teamIndex].Name};
+                    match.Visitor() = domain::Visitor{nfcTeams[teamIndex].Id, nfcTeams[teamIndex].Name};
+                } else {
+                    match.Home() = domain::Home{nfcTeams[teamIndex].Id, nfcTeams[teamIndex].Name};
+                    match.Visitor() = domain::Visitor{afcTeams[teamIndex].Id, afcTeams[teamIndex].Name};
+                }
+                
+                matches.push_back(match);
+            }
+        }
+        */
 
         return matches;
     }
@@ -68,9 +303,20 @@ public:
                         const std::vector<std::shared_ptr<domain::Group>>& groups) override {
         std::vector<domain::Match> playoffMatches;
 
-        auto [afc, nfc] = ClassifyByConference(groups);
-        auto afcPlayoffTeams = GetPlayoffTeamsWithNames(afc, regularMatches);
-        auto nfcPlayoffTeams = GetPlayoffTeamsWithNames(nfc, regularMatches);
+        // Separate groups by conference
+        std::vector<std::shared_ptr<domain::Group>> afcGroups;
+        std::vector<std::shared_ptr<domain::Group>> nfcGroups;
+
+        for (const auto& group : groups) {
+            if (group->Conference() == domain::Conference::AFC) {
+                afcGroups.push_back(group);
+            } else {
+                nfcGroups.push_back(group);
+            }
+        }
+
+        auto afcPlayoffTeams = GetPlayoffTeamsWithNames(afcGroups, regularMatches);
+        auto nfcPlayoffTeams = GetPlayoffTeamsWithNames(nfcGroups, regularMatches);
 
         if (afcPlayoffTeams.size() != 7 || nfcPlayoffTeams.size() != 7) {
             return std::unexpected("Failed to determine playoff teams");
@@ -84,22 +330,26 @@ public:
         for (int i = 0; i < 4; i++) {
             domain::Match match;
             match.TournamentId() = tournament.Id();
-            match.Round() = domain::RoundType::QUARTERFINALS;
+            match.Round() = domain::RoundType::DIVISIONAL;
             playoffMatches.push_back(match);
         }
+
+        // Asignar matches a bye teams
+        playoffMatches[6].Home() = domain::Home(afcPlayoffTeams[0].id, afcPlayoffTeams[0].name);
+        playoffMatches[8].Home() = domain::Home(afcPlayoffTeams[1].id, afcPlayoffTeams[1].name);
 
         // Conference Championships (Semifinals) - 2 matches vacíos
         for (int i = 0; i < 2; i++) {
             domain::Match match;
             match.TournamentId() = tournament.Id();
-            match.Round() = domain::RoundType::SEMIFINALS;
+            match.Round() = domain::RoundType::CHAMPIONSHIP;
             playoffMatches.push_back(match);
         }
 
         // Super Bowl (Final) - 1 match vacío
         domain::Match finalMatch;
         finalMatch.TournamentId() = tournament.Id();
-        finalMatch.Round() = domain::RoundType::FINAL;
+        finalMatch.Round() = domain::RoundType::SUPERBOWL;
         playoffMatches.push_back(finalMatch);
 
         return playoffMatches;
@@ -136,7 +386,7 @@ public:
 
     std::vector<std::string>
     TabulateTeams(const std::vector<std::shared_ptr<domain::Match>>& matches,
-                 const std::vector<std::shared_ptr<domain::Group>>& groups) override {
+                const std::vector<std::shared_ptr<domain::Group>>& groups) override {
         struct TeamStats {
             std::string teamId;
             std::string groupId;
@@ -145,110 +395,102 @@ public:
             int ties = 0;
             int pointsFor = 0;
             int pointsAgainst = 0;
-
             double winPercentage() const {
                 if (wins + losses + ties == 0) return 0.0;
                 return (wins + 0.5 * ties) / (wins + losses + ties);
             }
-
             int pointDifferential() const {
                 return pointsFor - pointsAgainst;
             }
         };
-
+        
         std::map<std::string, TeamStats> stats;
-
-        // Inicializar stats
+        
+        // Initialize stats
         for (const auto& group : groups) {
             for (const auto& team : group->Teams()) {
                 stats[team.Id] = {team.Id, group->Id(), 0, 0, 0, 0, 0};
             }
         }
-
-        // Recolectar estadísticas
+        
+        // Collect statistics - ONLY for teams in our groups
         for (const auto& match : matches) {
             if (!match->IsPlayed() || match->Round() != domain::RoundType::REGULAR)
                 continue;
-
+            
             const auto& score = match->MatchScore().value();
-
-            stats[match->HomeTeamId()].pointsFor += score.homeTeamScore;
-            stats[match->HomeTeamId()].pointsAgainst += score.visitorTeamScore;
-            stats[match->VisitorTeamId()].pointsFor += score.visitorTeamScore;
-            stats[match->VisitorTeamId()].pointsAgainst += score.homeTeamScore;
-
-            if (score.homeTeamScore > score.visitorTeamScore) {
-                stats[match->HomeTeamId()].wins++;
-                stats[match->VisitorTeamId()].losses++;
-            } else if (score.homeTeamScore < score.visitorTeamScore) {
-                stats[match->VisitorTeamId()].wins++;
-                stats[match->HomeTeamId()].losses++;
-            } else {
-                stats[match->HomeTeamId()].ties++;
-                stats[match->VisitorTeamId()].ties++;
+            
+            // Check if teams are in our groups before updating stats
+            bool homeInGroup = stats.find(match->Home().id) != stats.end();
+            bool visitorInGroup = stats.find(match->Visitor().id) != stats.end();
+            
+            // Update home team stats (if in group)
+            if (homeInGroup) {
+                stats[match->Home().id].pointsFor += score.homeTeamScore;
+                stats[match->Home().id].pointsAgainst += score.visitorTeamScore;
+                
+                if (score.homeTeamScore > score.visitorTeamScore) {
+                    stats[match->Home().id].wins++;
+                } else if (score.homeTeamScore < score.visitorTeamScore) {
+                    stats[match->Home().id].losses++;
+                } else {
+                    stats[match->Home().id].ties++;
+                }
+            }
+            
+            // Update visitor team stats (if in group)
+            if (visitorInGroup) {
+                stats[match->Visitor().id].pointsFor += score.visitorTeamScore;
+                stats[match->Visitor().id].pointsAgainst += score.homeTeamScore;
+                
+                if (score.homeTeamScore < score.visitorTeamScore) {
+                    stats[match->Visitor().id].wins++;
+                } else if (score.homeTeamScore > score.visitorTeamScore) {
+                    stats[match->Visitor().id].losses++;
+                } else {
+                    stats[match->Visitor().id].ties++;
+                }
             }
         }
-
-        // Ordenar
+        
+        // Sort
         std::vector<TeamStats> sortedStats;
         for (const auto& [id, stat] : stats) {
             sortedStats.push_back(stat);
         }
-
+        
         std::sort(sortedStats.begin(), sortedStats.end(),
-                 [](const TeamStats& a, const TeamStats& b) {
+                [](const TeamStats& a, const TeamStats& b) {
             if (a.winPercentage() != b.winPercentage())
                 return a.winPercentage() > b.winPercentage();
             if (a.pointsFor != b.pointsFor)
                 return a.pointsFor > b.pointsFor;
             return a.pointDifferential() > b.pointDifferential();
         });
-
+        
         std::vector<std::string> result;
         for (const auto& stat : sortedStats) {
             result.push_back(stat.teamId);
         }
-
         return result;
     }
 
 private:
-    struct Conference {
-        std::string name;
-        std::vector<std::shared_ptr<domain::Group>> groups;
-    };
-
     struct TeamInfo {
         std::string id;
         std::string name;
     };
 
-    std::pair<Conference, Conference> ClassifyByConference(
-        const std::vector<std::shared_ptr<domain::Group>>& groups) {
-        Conference afc{"AFC", {}};
-        Conference nfc{"NFC", {}};
-
-        for (size_t i = 0; i < groups.size(); i++) {
-            if (i < 4) {
-                afc.groups.push_back(groups[i]);
-            } else {
-                nfc.groups.push_back(groups[i]);
-            }
-        }
-
-        return {afc, nfc};
-    }
-
-    // ✅ NUEVO: Versión que retorna TeamInfo con ID y nombre
+    // Versión que retorna TeamInfo con ID y nombre
     std::vector<TeamInfo> GetPlayoffTeamsWithNames(
-        const Conference& conference,
+        const std::vector<std::shared_ptr<domain::Group>>& groups,
         const std::vector<std::shared_ptr<domain::Match>>& matches) {
 
         std::vector<TeamInfo> playoffTeams;
         std::set<std::string> divisionWinners;
 
         // Obtener ganador de cada división
-        for (const auto& group : conference.groups) {
+        for (const auto& group : groups) {
             auto winner = GetDivisionWinnerWithName(group, matches);
             if (!winner.id.empty()) {
                 playoffTeams.push_back(winner);
@@ -258,7 +500,7 @@ private:
 
         // Obtener wildcards
         std::vector<std::shared_ptr<domain::Group>> confGroups;
-        for (const auto& group : conference.groups) {
+        for (const auto& group : groups) {
             confGroups.push_back(group);
         }
 
@@ -272,7 +514,7 @@ private:
                 bool inConference = false;
                 std::string teamName;
 
-                for (const auto& group : conference.groups) {
+                for (const auto& group : groups) {
                     for (const auto& team : group->Teams()) {
                         if (team.Id == teamId) {
                             inConference = true;
@@ -293,7 +535,7 @@ private:
         return playoffTeams;
     }
 
-    // ✅ NUEVO: Obtener ganador con nombre
+    // Obtener ganador con nombre
     TeamInfo GetDivisionWinnerWithName(
         const std::shared_ptr<domain::Group>& group,
         const std::vector<std::shared_ptr<domain::Match>>& matches) {
@@ -306,8 +548,8 @@ private:
         }
 
         for (const auto& match : matches) {
-            if (groupTeamIds.count(match->HomeTeamId()) &&
-                groupTeamIds.count(match->VisitorTeamId())) {
+            if (groupTeamIds.count(match->Home().id) ||
+                groupTeamIds.count(match->Visitor().id)) {
                 groupMatches.push_back(match);
             }
         }
@@ -317,6 +559,12 @@ private:
 
         if (ranked.empty()) {
             return {"", ""};
+        }
+
+        std::println("[NFL Strategy] Group {}, in {} conference standings", group->Name(), ((group->Conference() == domain::Conference::AFC) ? "AFC" : "NFC"));
+        for (int i = 0; i < ranked.size(); i++) {
+
+            std::println("[NFL Strategy] {} - id: {}", i + 1, ranked[i]);
         }
 
         // Buscar el nombre del equipo ganador
@@ -343,12 +591,12 @@ private:
 
         for (const auto& [home, away] : matchups) {
             domain::Match match;
+            domain::Home homeObj{playoffTeams[home].id, playoffTeams[home].name};
+            domain::Visitor visitorObj{playoffTeams[away].id, playoffTeams[away].name};
             match.TournamentId() = tournamentId;
-            match.HomeTeamId() = playoffTeams[home].id;
-            match.HomeTeamName() = playoffTeams[home].name;
-            match.VisitorTeamId() = playoffTeams[away].id;
-            match.VisitorTeamName() = playoffTeams[away].name;
-            match.Round() = domain::RoundType::QUARTERFINALS;
+            match.Home() = homeObj;
+            match.Visitor() = visitorObj;
+            match.Round() = domain::RoundType::WILDCARD;
             matches.push_back(match);
         }
     }

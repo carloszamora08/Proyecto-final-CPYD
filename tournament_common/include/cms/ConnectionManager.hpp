@@ -13,19 +13,28 @@
 class ConnectionManager {
 public:
     void initialize(const std::string_view& brokerURI) {
+        std::lock_guard<std::mutex> lock(mutex_);
         factory = std::make_unique<activemq::core::ActiveMQConnectionFactory>(brokerURI.data());
         connection = std::shared_ptr<cms::Connection>(factory->createConnection());
-
         connection->start();
     }
-
-    [[nodiscard]] std::shared_ptr<cms::Connection> Connection() const { return connection; }
-
+    
+    [[nodiscard]] std::shared_ptr<cms::Connection> Connection() const { 
+        return connection; 
+    }
+    
     [[nodiscard]] std::shared_ptr<cms::Session> CreateSession() const {
-        return std::shared_ptr<cms::Session>(connection->createSession(cms::Session::AUTO_ACKNOWLEDGE));
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (!connection) {
+            throw std::runtime_error("Connection not initialized");
+        }
+        return std::shared_ptr<cms::Session>(
+            connection->createSession(cms::Session::AUTO_ACKNOWLEDGE)
+        );
     }
 
 private:
+    mutable std::mutex mutex_;  // Add mutex for thread safety
     std::unique_ptr<activemq::core::ActiveMQConnectionFactory> factory;
     std::shared_ptr<cms::Connection> connection;
 };

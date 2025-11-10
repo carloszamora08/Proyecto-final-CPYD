@@ -1,3 +1,5 @@
+#include <crow.h>
+
 #include "controller/MatchController.hpp"
 #include "configuration/RouteDefinition.hpp"
 #include "domain/Utilities.hpp"
@@ -15,22 +17,28 @@ crow::response MatchController::GetMatches(const crow::request& request,
     std::optional<std::string> filter;
     auto showMatches = request.url_params.get("showMatches");
     if (showMatches != nullptr) {
-        filter = std::string(showMatches);
+        std::string filterValue(showMatches);
+        
+        // Validar que el filtro sea válido
+        if (filterValue == "played" || filterValue == "pending") {
+            filter = filterValue;
+        } else {
+            return {crow::BAD_REQUEST, "Invalid showMatches value. Must be 'played' or 'pending'"};
+        }
     }
-
+    
     const auto result = matchDelegate->GetMatches(tournamentId, filter);
-
+    
     if (!result) {
         if (result.error() == "Tournament not found") {
             return {crow::NOT_FOUND, result.error()};
         }
         return {crow::INTERNAL_SERVER_ERROR, result.error()};
     }
-
+    
     nlohmann::json body = *result;
     crow::response response{crow::OK, body.dump()};
     response.add_header(CONTENT_TYPE_HEADER, JSON_CONTENT_TYPE);
-
     return response;
 }
 
@@ -75,10 +83,10 @@ crow::response MatchController::UpdateMatchScore(const crow::request& request,
                 return {crow::NOT_FOUND, result.error()};
             }
             
-            // Si el error contiene "Invalid score" o "Tie not allowed", es 422
+            // Si el error contiene "Invalid score" o "Tie not allowed", es 409 
             if (result.error().find("Invalid score") != std::string::npos ||
                 result.error().find("Tie not allowed") != std::string::npos) {
-                return crow::response(422, result.error());
+                return {409, result.error()};
             }
             
             return {crow::INTERNAL_SERVER_ERROR, result.error()};
