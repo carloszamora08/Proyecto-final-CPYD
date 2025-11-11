@@ -24,9 +24,6 @@ public:
             }
         }
 
-
-
-
         // Matches intragrupales
         for (const auto& group : groups) {
             const auto& teams = group->Teams();
@@ -327,7 +324,7 @@ public:
 
         // Asignar matches a bye teams
         playoffMatches[6].getHome() = domain::Home(afcPlayoffTeams[0].id, afcPlayoffTeams[0].name);
-        playoffMatches[8].getHome() = domain::Home(afcPlayoffTeams[1].id, afcPlayoffTeams[1].name);
+        playoffMatches[8].getHome() = domain::Home(nfcPlayoffTeams[0].id, nfcPlayoffTeams[0].name);
 
         // Conference Championships (Semifinals) - 2 matches vacíos
         for (int i = 0; i < 2; i++) {
@@ -484,12 +481,10 @@ private:
         for (const auto& group : groups) {
             auto winner = GetDivisionWinnerWithName(group, matches);
             if (!winner.id.empty()) {
-                playoffTeams.push_back(winner);
                 divisionWinners.insert(winner.id);
             }
         }
 
-        // Obtener wildcards
         std::vector<std::shared_ptr<domain::Group>> confGroups;
         for (const auto& group : groups) {
             confGroups.push_back(group);
@@ -497,6 +492,33 @@ private:
 
         auto allTeamsRanked = TabulateTeams(matches, confGroups);
 
+        int divisionWinnersAdded = 0;
+        for (const auto& teamId : allTeamsRanked) {
+            if (divisionWinnersAdded >= 4) break;
+
+            if (divisionWinners.find(teamId) != divisionWinners.end()) {
+                bool inConference = false;
+                std::string teamName;
+
+                for (const auto& group : groups) {
+                    for (const auto& team : group->Teams()) {
+                        if (team.Id == teamId) {
+                            inConference = true;
+                            teamName = team.Name;
+                            break;
+                        }
+                    }
+                    if (inConference) break;
+                }
+
+                if (inConference) {
+                    playoffTeams.push_back({teamId, teamName});
+                    divisionWinnersAdded++;
+                }
+            }
+        }
+
+        // Obtener wildcards
         int wildcardsAdded = 0;
         for (const auto& teamId : allTeamsRanked) {
             if (wildcardsAdded >= 3) break;

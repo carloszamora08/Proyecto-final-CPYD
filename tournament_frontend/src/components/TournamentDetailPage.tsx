@@ -14,6 +14,7 @@ export default function TournamentDetailPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [activeTab, setActiveTab] = useState<'groups' | 'matches' | 'rankings'>('groups');
+    const [selectedRound, setSelectedRound] = useState<string>('all');
 
     // Modals
     const [showGroupModal, setShowGroupModal] = useState(false);
@@ -62,7 +63,7 @@ export default function TournamentDetailPage() {
         try {
             await groupsApi.create(tournamentId!, groupForm);
             setShowGroupModal(false);
-            setGroupForm({ name: '', region: '', conference: 'AFC' }); // RESET CON CONFERENCE
+            setGroupForm({ name: '', region: '', conference: 'AFC' });
             loadTournamentData();
         } catch (err: any) {
             setError(err.response?.data || 'Failed to create group');
@@ -81,7 +82,9 @@ export default function TournamentDetailPage() {
             setShowTeamModal(false);
             setSelectedTeamIds([]);
             setSelectedGroup('');
-            loadTournamentData();
+            setTimeout(() => {
+                loadTournamentData();
+            }, 1000);
         } catch (err: any) {
             setError(err.response?.data || 'Failed to add teams to group');
         }
@@ -111,6 +114,27 @@ export default function TournamentDetailPage() {
     const getAvailableTeams = () => {
         const usedTeamIds = new Set(groups.flatMap(g => g.teams.map(t => t.id)));
         return allTeams.filter(t => !usedTeamIds.has(t.id));
+    };
+
+    const filteredMatches = selectedRound === 'all' 
+        ? matches 
+        : matches.filter(match => match.round === selectedRound);
+
+    const getMatchCountByRound = (round: string) => {
+        if (round === 'all') return matches.length;
+        return matches.filter(m => m.round === round).length;
+    };
+
+    const getRoundLabel = (round: string) => {
+        const labels: { [key: string]: string } = {
+            'all': 'All Matches',
+            'regular': 'Regular Season',
+            'wild card': 'Wild Card',
+            'divisional': 'Divisional',
+            'championship': 'Championship',
+            'super bowl': 'Super Bowl'
+        };
+        return labels[round] || round;
     };
 
     if (loading) return <div className="loading">Loading tournament...</div>;
@@ -223,45 +247,92 @@ export default function TournamentDetailPage() {
             )}
 
             {activeTab === 'matches' && (
-                <div className="grid">
-                    {matches.map((match) => (
-                        <div key={match.id} className="card">
-                            <span className="badge badge-yellow" style={{ marginBottom: '0.5rem' }}>
-                                {match.round.toUpperCase()}
-                            </span>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
-                                <div style={{ flex: 1 }}>
-                                    <p style={{ fontWeight: 500 }}>{match.home?.name || 'TBD'}</p>
-                                    <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#3b82f6' }}>
-                                        {match.score?.home ?? '-'}
-                                    </p>
-                                </div>
-                                <div style={{ padding: '0 1rem', color: '#6b7280' }}>vs</div>
-                                <div style={{ flex: 1, textAlign: 'right' }}>
-                                    <p style={{ fontWeight: 500 }}>{match.visitor?.name || 'TBD'}</p>
-                                    <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#3b82f6' }}>
-                                        {match.score?.visitor ?? '-'}
-                                    </p>
-                                </div>
-                            </div>
-                            <button
-                                className="btn btn-primary"
-                                onClick={() => openScoreModal(match)}
-                                style={{ marginTop: '1rem', fontSize: '0.875rem', padding: '0.5rem 1rem', width: '100%' }}
-                                disabled={!match.home?.id || !match.visitor?.id || tournament.finished === 'yes'}
-                            >
-                                {match.score ? 'Update Score' : 'Enter Score'}
-                            </button>
+                <>
+                    <div style={{ 
+                        marginBottom: '2rem',
+                        display: 'flex',
+                        gap: '0.5rem',
+                        flexWrap: 'wrap',
+                        background: '#f3f4f6',
+                        padding: '0.75rem',
+                        borderRadius: '8px'
+                    }}>
+                        {['all', 'regular', 'wild card', 'divisional', 'championship', 'super bowl'].map((round) => {
+                            const count = getMatchCountByRound(round);
+                            return (
+                                <button
+                                    key={round}
+                                    onClick={() => setSelectedRound(round)}
+                                    style={{
+                                        padding: '0.5rem 1rem',
+                                        border: 'none',
+                                        borderRadius: '6px',
+                                        background: selectedRound === round ? '#3b82f6' : 'white',
+                                        color: selectedRound === round ? 'white' : '#6b7280',
+                                        fontWeight: 500,
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s',
+                                        fontSize: '0.875rem'
+                                    }}
+                                >
+                                    {getRoundLabel(round)} ({count})
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    {filteredMatches.length === 0 ? (
+                        <div style={{ 
+                            textAlign: 'center', 
+                            padding: '3rem', 
+                            color: '#6b7280',
+                            background: '#f9fafb',
+                            borderRadius: '8px'
+                        }}>
+                            No matches found for {getRoundLabel(selectedRound)}
                         </div>
-                    ))}
-                </div>
+                    ) : (
+                        <div className="grid">
+                            {filteredMatches.map((match) => (
+                                <div key={match.id} className="card">
+                                    <span className="badge badge-yellow" style={{ marginBottom: '0.5rem' }}>
+                                        {match.round.toUpperCase()}
+                                    </span>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
+                                        <div style={{ flex: 1 }}>
+                                            <p style={{ fontWeight: 500 }}>{match.home?.name || 'TBD'}</p>
+                                            <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#3b82f6' }}>
+                                                {match.score?.home ?? '-'}
+                                            </p>
+                                        </div>
+                                        <div style={{ padding: '0 1rem', color: '#6b7280' }}>vs</div>
+                                        <div style={{ flex: 1, textAlign: 'right' }}>
+                                            <p style={{ fontWeight: 500 }}>{match.visitor?.name || 'TBD'}</p>
+                                            <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#3b82f6' }}>
+                                                {match.score?.visitor ?? '-'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        className="btn btn-primary"
+                                        onClick={() => openScoreModal(match)}
+                                        style={{ marginTop: '1rem', fontSize: '0.875rem', padding: '0.5rem 1rem', width: '100%' }}
+                                        disabled={!match.home?.id || !match.visitor?.id || tournament.finished === 'yes' || (match.round != "regular" && match.score !== undefined)}
+                                    >
+                                        {match.score ? 'Update Score' : 'Enter Score'}
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </>
             )}
 
             {activeTab === 'rankings' && (
                 <RankingsTab matches={matches} groups={groups} />
             )}
 
-            {/* Group Modal - ACTUALIZADO CON DROPDOWN DE CONFERENCE */}
+            {/* Group Modal */}
             {showGroupModal && (
                 <div className="modal-overlay" onClick={() => setShowGroupModal(false)}>
                     <div className="modal" onClick={(e) => e.stopPropagation()}>

@@ -88,6 +88,11 @@ MatchDelegate::UpdateMatchScore(std::string_view tournamentId,
         return std::unexpected("Match teams are not ready");
     }
 
+    // Validar que el match no sea de playoff ya jugado
+    if (match->Round() != domain::RoundType::REGULAR && match->IsPlayed()) {
+        return std::unexpected("Cannot modify an already played playoff game");
+    }
+
     // Validar el score según las reglas del torneo
     if (!ValidateScore(score, *tournament, match->Round())) {
         return std::unexpected("Invalid score for this tournament format and round");
