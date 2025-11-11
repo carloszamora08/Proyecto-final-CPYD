@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type { Match, Group } from '../types';
 
 interface TeamStats {
@@ -19,6 +19,8 @@ interface RankingsTabProps {
 }
 
 export default function RankingsTab({ matches, groups }: RankingsTabProps) {
+    const [viewMode, setViewMode] = useState<'conference' | 'division'>('conference');
+
     const standings = useMemo(() => {
         const stats = new Map<string, TeamStats>();
 
@@ -103,6 +105,32 @@ export default function RankingsTab({ matches, groups }: RankingsTabProps) {
             });
     }, [standings]);
 
+    const divisionStandings = useMemo(() => {
+        const divisions = new Map<string, TeamStats[]>();
+        
+        standings.forEach(team => {
+            const key = `${team.conference}-${team.division}`;
+            if (!divisions.has(key)) {
+                divisions.set(key, []);
+            }
+            divisions.get(key)!.push(team);
+        });
+
+        // Sort teams within each division
+        divisions.forEach((teams, key) => {
+            teams.sort((a, b) => {
+                const aWinPct = (a.wins + 0.5 * a.ties) / (a.wins + a.losses + a.ties || 1);
+                const bWinPct = (b.wins + 0.5 * b.ties) / (b.wins + b.losses + b.ties || 1);
+
+                if (aWinPct !== bWinPct) return bWinPct - aWinPct;
+                if (a.pointsFor !== b.pointsFor) return b.pointsFor - a.pointsFor;
+                return (b.pointsFor - b.pointsAgainst) - (a.pointsFor - a.pointsAgainst);
+            });
+        });
+
+        return divisions;
+    }, [standings]);
+
     const getWinPercentage = (team: TeamStats) => {
         const total = team.wins + team.losses + team.ties;
         if (total === 0) return '0.000';
@@ -136,26 +164,15 @@ export default function RankingsTab({ matches, groups }: RankingsTabProps) {
                     </thead>
                     <tbody>
                     {teams.map((team, index) => {
-                        const isPlayoffTeam = index < 7;
                         return (
                             <tr
                                 key={team.teamId}
                                 style={{
                                     borderBottom: '1px solid #e5e7eb',
-                                    background: isPlayoffTeam ? '#f0f9ff' : 'white'
                                 }}
                             >
                                 <td style={{ padding: '1rem' }}>
                                     {index + 1}
-                                    {isPlayoffTeam && (
-                                        <span style={{
-                                            marginLeft: '0.5rem',
-                                            color: '#3b82f6',
-                                            fontWeight: 600
-                                        }}>
-                                            ★
-                                        </span>
-                                    )}
                                 </td>
                                 <td style={{ padding: '1rem', fontWeight: 500 }}>{team.teamName}</td>
                                 <td style={{ padding: '1rem', color: '#6b7280' }}>{team.division}</td>
@@ -189,8 +206,67 @@ export default function RankingsTab({ matches, groups }: RankingsTabProps) {
 
     return (
         <div>
-            {renderStandingsTable(afcStandings, 'AFC')}
-            {renderStandingsTable(nfcStandings, 'NFC')}
+            <div style={{ 
+                marginBottom: '2rem', 
+                display: 'flex', 
+                justifyContent: 'center', 
+                gap: '0.5rem',
+                background: '#f3f4f6',
+                padding: '0.5rem',
+                borderRadius: '8px',
+                width: 'fit-content',
+                margin: '0 auto 2rem'
+            }}>
+                <button
+                    onClick={() => setViewMode('conference')}
+                    style={{
+                        padding: '0.5rem 1.5rem',
+                        border: 'none',
+                        borderRadius: '6px',
+                        background: viewMode === 'conference' ? '#3b82f6' : 'transparent',
+                        color: viewMode === 'conference' ? 'white' : '#6b7280',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                    }}
+                >
+                    By Conference
+                </button>
+                <button
+                    onClick={() => setViewMode('division')}
+                    style={{
+                        padding: '0.5rem 1.5rem',
+                        border: 'none',
+                        borderRadius: '6px',
+                        background: viewMode === 'division' ? '#3b82f6' : 'transparent',
+                        color: viewMode === 'division' ? 'white' : '#6b7280',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                    }}
+                >
+                    By Division
+                </button>
+            </div>
+
+            {viewMode === 'conference' ? (
+                <>
+                    {renderStandingsTable(afcStandings, 'AFC')}
+                    {renderStandingsTable(nfcStandings, 'NFC')}
+                </>
+            ) : (
+                <>
+                    <h2 style={{ marginBottom: '1.5rem', color: '#1e3a8a' }}>AFC Divisions</h2>
+                    {Array.from(divisionStandings.entries())
+                        .filter(([key]) => key.startsWith('AFC-'))
+                        .map(([key, teams]) => renderStandingsTable(teams, teams[0].division))}
+                    
+                    <h2 style={{ marginTop: '2rem', marginBottom: '1.5rem', color: '#1e3a8a' }}>NFC Divisions</h2>
+                    {Array.from(divisionStandings.entries())
+                        .filter(([key]) => key.startsWith('NFC-'))
+                        .map(([key, teams]) => renderStandingsTable(teams, teams[0].division))}
+                </>
+            )}
         </div>
     );
 }
