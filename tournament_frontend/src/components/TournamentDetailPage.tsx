@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { tournamentsApi, groupsApi, matchesApi, teamsApi } from '../services/api';
 import type { Tournament, Group, Match, Team } from '../types';
+import RankingsTab from './RankingsTab';
 
 export default function TournamentDetailPage() {
     const { tournamentId } = useParams<{ tournamentId: string }>();
@@ -12,7 +13,7 @@ export default function TournamentDetailPage() {
     const [allTeams, setAllTeams] = useState<Team[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [activeTab, setActiveTab] = useState<'groups' | 'matches'>('groups');
+    const [activeTab, setActiveTab] = useState<'groups' | 'matches' | 'rankings'>('groups');
 
     // Modals
     const [showGroupModal, setShowGroupModal] = useState(false);
@@ -21,8 +22,11 @@ export default function TournamentDetailPage() {
     const [selectedGroup, setSelectedGroup] = useState<string>('');
     const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
 
-    // Forms
-    const [groupForm, setGroupForm] = useState({ name: '', region: '' });
+    const [groupForm, setGroupForm] = useState({
+        name: '',
+        region: '',
+        conference: 'AFC' as 'AFC' | 'NFC'
+    });
     const [selectedTeamIds, setSelectedTeamIds] = useState<string[]>([]);
     const [scoreForm, setScoreForm] = useState({ home: 0, visitor: 0 });
 
@@ -58,7 +62,7 @@ export default function TournamentDetailPage() {
         try {
             await groupsApi.create(tournamentId!, groupForm);
             setShowGroupModal(false);
-            setGroupForm({ name: '', region: '' });
+            setGroupForm({ name: '', region: '', conference: 'AFC' }); // RESET CON CONFERENCE
             loadTournamentData();
         } catch (err: any) {
             setError(err.response?.data || 'Failed to create group');
@@ -118,7 +122,14 @@ export default function TournamentDetailPage() {
                 <button onClick={() => navigate('/')} className="btn" style={{ marginBottom: '1rem' }}>
                     ← Back to Tournaments
                 </button>
-                <h2>{tournament.name}</h2>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <h2>{tournament.name}</h2>
+                    {tournament.finished === 'yes' && (
+                        <span className="badge badge-yellow" style={{ fontSize: '1rem', padding: '0.5rem 1rem' }}>
+                            Tournament Finished
+                        </span>
+                    )}
+                </div>
                 <p style={{ color: '#6b7280' }}>Year: {tournament.year}</p>
             </div>
 
@@ -153,6 +164,20 @@ export default function TournamentDetailPage() {
                 >
                     Matches ({matches.length})
                 </button>
+                <button
+                    onClick={() => setActiveTab('rankings')}
+                    style={{
+                        padding: '1rem',
+                        border: 'none',
+                        background: 'none',
+                        borderBottom: activeTab === 'rankings' ? '2px solid #3b82f6' : 'none',
+                        color: activeTab === 'rankings' ? '#3b82f6' : '#6b7280',
+                        fontWeight: 500,
+                        cursor: 'pointer'
+                    }}
+                >
+                    Rankings
+                </button>
             </div>
 
             {activeTab === 'groups' && (
@@ -165,7 +190,12 @@ export default function TournamentDetailPage() {
                     <div className="grid">
                         {groups.map((group) => (
                             <div key={group.id} className="card">
-                                <h3>{group.name}</h3>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                                    <h3>{group.name}</h3>
+                                    <span className={`badge ${group.conference === 'AFC' ? 'badge-blue' : 'badge-green'}`}>
+                                        {group.conference}
+                                    </span>
+                                </div>
                                 <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>Region: {group.region}</p>
                                 <div style={{ marginTop: '1rem' }}>
                                     <strong>Teams ({group.teams.length}):</strong>
@@ -182,6 +212,7 @@ export default function TournamentDetailPage() {
                                         setShowTeamModal(true);
                                     }}
                                     style={{ marginTop: '1rem', fontSize: '0.875rem', padding: '0.5rem 1rem', width: '100%' }}
+                                    disabled={tournament.finished === 'yes'}
                                 >
                                     Add Teams
                                 </button>
@@ -195,19 +226,19 @@ export default function TournamentDetailPage() {
                 <div className="grid">
                     {matches.map((match) => (
                         <div key={match.id} className="card">
-              <span className="badge badge-yellow" style={{ marginBottom: '0.5rem' }}>
-                {match.round.toUpperCase()}
-              </span>
+                            <span className="badge badge-yellow" style={{ marginBottom: '0.5rem' }}>
+                                {match.round.toUpperCase()}
+                            </span>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
                                 <div style={{ flex: 1 }}>
-                                    <p style={{ fontWeight: 500 }}>{match.homeTeamName || 'TBD'}</p>
+                                    <p style={{ fontWeight: 500 }}>{match.home?.name || 'TBD'}</p>
                                     <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#3b82f6' }}>
                                         {match.score?.home ?? '-'}
                                     </p>
                                 </div>
                                 <div style={{ padding: '0 1rem', color: '#6b7280' }}>vs</div>
                                 <div style={{ flex: 1, textAlign: 'right' }}>
-                                    <p style={{ fontWeight: 500 }}>{match.visitorTeamName || 'TBD'}</p>
+                                    <p style={{ fontWeight: 500 }}>{match.visitor?.name || 'TBD'}</p>
                                     <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#3b82f6' }}>
                                         {match.score?.visitor ?? '-'}
                                     </p>
@@ -217,7 +248,7 @@ export default function TournamentDetailPage() {
                                 className="btn btn-primary"
                                 onClick={() => openScoreModal(match)}
                                 style={{ marginTop: '1rem', fontSize: '0.875rem', padding: '0.5rem 1rem', width: '100%' }}
-                                disabled={!match.homeTeamId || !match.visitorTeamId}
+                                disabled={!match.home?.id || !match.visitor?.id || tournament.finished === 'yes'}
                             >
                                 {match.score ? 'Update Score' : 'Enter Score'}
                             </button>
@@ -226,7 +257,11 @@ export default function TournamentDetailPage() {
                 </div>
             )}
 
-            {/* Group Modal */}
+            {activeTab === 'rankings' && (
+                <RankingsTab matches={matches} groups={groups} />
+            )}
+
+            {/* Group Modal - ACTUALIZADO CON DROPDOWN DE CONFERENCE */}
             {showGroupModal && (
                 <div className="modal-overlay" onClick={() => setShowGroupModal(false)}>
                     <div className="modal" onClick={(e) => e.stopPropagation()}>
@@ -241,6 +276,7 @@ export default function TournamentDetailPage() {
                                     type="text"
                                     value={groupForm.name}
                                     onChange={(e) => setGroupForm({ ...groupForm, name: e.target.value })}
+                                    placeholder="e.g., AFC North"
                                     required
                                 />
                             </div>
@@ -250,8 +286,32 @@ export default function TournamentDetailPage() {
                                     type="text"
                                     value={groupForm.region}
                                     onChange={(e) => setGroupForm({ ...groupForm, region: e.target.value })}
+                                    placeholder="e.g., North, South, East, West"
                                     required
                                 />
+                            </div>
+                            <div className="form-group">
+                                <label>Conference</label>
+                                <select
+                                    value={groupForm.conference}
+                                    onChange={(e) => setGroupForm({
+                                        ...groupForm,
+                                        conference: e.target.value as 'AFC' | 'NFC'
+                                    })}
+                                    required
+                                    style={{
+                                        width: '100%',
+                                        padding: '0.75rem',
+                                        border: '2px solid #e5e7eb',
+                                        borderRadius: '8px',
+                                        fontSize: '1rem',
+                                        backgroundColor: 'white',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    <option value="AFC">AFC - American Football Conference</option>
+                                    <option value="NFC">NFC - National Football Conference</option>
+                                </select>
                             </div>
                             <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>
                                 Create Group
@@ -307,7 +367,7 @@ export default function TournamentDetailPage() {
                         </div>
                         <form onSubmit={handleUpdateScore}>
                             <div className="form-group">
-                                <label>{selectedMatch.homeTeamName} (Home)</label>
+                                <label>{selectedMatch.home.name} (Home)</label>
                                 <input
                                     type="number"
                                     min="0"
@@ -318,7 +378,7 @@ export default function TournamentDetailPage() {
                                 />
                             </div>
                             <div className="form-group">
-                                <label>{selectedMatch.visitorTeamName} (Visitor)</label>
+                                <label>{selectedMatch.visitor.name} (Visitor)</label>
                                 <input
                                     type="number"
                                     min="0"

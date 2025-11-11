@@ -46,11 +46,11 @@ namespace domain {
             return  region;
         }
 
-        [[nodiscard]] Conference Conference() const {
+        [[nodiscard]] Conference getConference() const {
             return  conference;
         }
 
-        [[nodiscard]] domain::Conference & Conference() {
+        [[nodiscard]] domain::Conference & getConference() {
             return  conference;
         }
 
