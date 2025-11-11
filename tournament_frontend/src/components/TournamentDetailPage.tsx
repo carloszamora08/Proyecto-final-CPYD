@@ -82,7 +82,9 @@ export default function TournamentDetailPage() {
             setShowTeamModal(false);
             setSelectedTeamIds([]);
             setSelectedGroup('');
-            loadTournamentData();
+            setTimeout(() => {
+                loadTournamentData();
+            }, 1000);
         } catch (err: any) {
             setError(err.response?.data || 'Failed to add teams to group');
         }
@@ -315,7 +317,7 @@ export default function TournamentDetailPage() {
                                         className="btn btn-primary"
                                         onClick={() => openScoreModal(match)}
                                         style={{ marginTop: '1rem', fontSize: '0.875rem', padding: '0.5rem 1rem', width: '100%' }}
-                                        disabled={!match.home?.id || !match.visitor?.id || tournament.finished === 'yes'}
+                                        disabled={!match.home?.id || !match.visitor?.id || tournament.finished === 'yes' || (match.round != "regular" && match.score !== undefined)}
                                     >
                                         {match.score ? 'Update Score' : 'Enter Score'}
                                     </button>
