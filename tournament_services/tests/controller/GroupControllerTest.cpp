@@ -62,7 +62,7 @@ TEST_F(GroupControllerTest, CreateGroupSuccessTest) {
     EXPECT_EQ(capturedGroup.Name(), groupRequestBody.at("name").get<std::string>());
     EXPECT_EQ(capturedGroup.Region(), groupRequestBody.at("region").get<std::string>());
     domain::Conference expectedConference = groupRequestBody.at("conference").get<domain::Conference>();
-    EXPECT_EQ(capturedGroup.Conference(), expectedConference);
+    EXPECT_EQ(capturedGroup.getConference(), expectedConference);
     EXPECT_EQ(capturedGroup.Teams().size(), 0);
     EXPECT_EQ(response.code, crow::CREATED);
     EXPECT_EQ(response.get_header_value("location"), "new-id");
@@ -93,7 +93,7 @@ TEST_F(GroupControllerTest, CreateGroupDBInsertionFailTest) {
     EXPECT_EQ(capturedGroup.Name(), groupRequestBody.at("name").get<std::string>());
     EXPECT_EQ(capturedGroup.Region(), groupRequestBody.at("region").get<std::string>());
     domain::Conference expectedConference = groupRequestBody.at("conference").get<domain::Conference>();
-    EXPECT_EQ(capturedGroup.Conference(), expectedConference);
+    EXPECT_EQ(capturedGroup.getConference(), expectedConference);
     EXPECT_EQ(capturedGroup.Teams().size(), 0);
     EXPECT_EQ(response.code, crow::CONFLICT);
     EXPECT_EQ(response.body, "Group insertion failed");
@@ -367,7 +367,7 @@ TEST_F(GroupControllerTest, UpdateGroupSuccessTest) {
     EXPECT_EQ(capturedGroup.Name(), groupRequestBody.at("name").get<std::string>());
     EXPECT_EQ(capturedGroup.Region(), groupRequestBody.at("region").get<std::string>());
     domain::Conference expectedConference = groupRequestBody.at("conference").get<domain::Conference>();
-    EXPECT_EQ(capturedGroup.Conference(), expectedConference);
+    EXPECT_EQ(capturedGroup.getConference(), expectedConference);
     EXPECT_EQ(capturedGroup.TournamentId(), groupRequestBody.at("tournamentId").get<std::string>());
     EXPECT_EQ(capturedGroup.Teams().size(), 0);
     EXPECT_TRUE(capturedUpdateTeams);
@@ -402,7 +402,7 @@ TEST_F(GroupControllerTest, UpdateGroupFailTest) {
     EXPECT_EQ(capturedGroup.Name(), groupRequestBody.at("name").get<std::string>());
     EXPECT_EQ(capturedGroup.Region(), groupRequestBody.at("region").get<std::string>());
     domain::Conference expectedConference = groupRequestBody.at("conference").get<domain::Conference>();
-    EXPECT_EQ(capturedGroup.Conference(), expectedConference);
+    EXPECT_EQ(capturedGroup.getConference(), expectedConference);
     EXPECT_EQ(capturedGroup.TournamentId(), groupRequestBody.at("tournamentId").get<std::string>());
     EXPECT_EQ(capturedGroup.Teams().size(), 0);
     EXPECT_TRUE(capturedUpdateTeams);
