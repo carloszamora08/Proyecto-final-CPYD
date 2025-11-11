@@ -9,7 +9,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://tournament_services:8080',
+        target: 'http://CarlosDevContainer:8080',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '')
       }
