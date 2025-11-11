@@ -41,7 +41,7 @@ CREATE UNIQUE INDEX tournament_unique_name_idx ON TOURNAMENTS ((document->>'name
 
 CREATE TABLE GROUPS (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-    TOURNAMENT_ID UUID not null references TOURNAMENTS(ID),
+    TOURNAMENT_ID UUID not null references TOURNAMENTS(ID) ON DELETE CASCADE,
     document JSONB NOT NULL,
     last_update_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

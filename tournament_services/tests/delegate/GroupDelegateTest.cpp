@@ -122,7 +122,7 @@ TEST_F(GroupDelegateTest, CreateGroupSucessTest) {
     EXPECT_EQ(capturedGroup.Id(), group.Id());
     EXPECT_EQ(capturedGroup.Name(), group.Name());
     EXPECT_EQ(capturedGroup.Region(), group.Region());
-    EXPECT_EQ(capturedGroup.Conference(), group.Conference());
+    EXPECT_EQ(capturedGroup.getConference(), group.getConference());
     EXPECT_EQ(capturedGroup.TournamentId(), tournamentId);
     EXPECT_EQ(capturedGroup.Teams().size(), group.Teams().size());
     EXPECT_EQ(*response, "new-id");
@@ -180,7 +180,7 @@ TEST_F(GroupDelegateTest, CreateGroupDBInsertionFailTest) {
     EXPECT_EQ(capturedGroup.Id(), group.Id());
     EXPECT_EQ(capturedGroup.Name(), group.Name());
     EXPECT_EQ(capturedGroup.Region(), group.Region());
-    EXPECT_EQ(capturedGroup.Conference(), group.Conference());
+    EXPECT_EQ(capturedGroup.getConference(), group.getConference());
     EXPECT_EQ(capturedGroup.TournamentId(), tournamentId);
     EXPECT_EQ(capturedGroup.Teams().size(), group.Teams().size());
     EXPECT_FALSE(response.has_value());
@@ -613,12 +613,12 @@ TEST_F(GroupDelegateTest, GetGroupsSuccessTest) {
     EXPECT_EQ(response.value()[0]->Id(), "group-id-0");
     EXPECT_EQ(response.value()[0]->Name(), "Group 0");
     EXPECT_EQ(response.value()[0]->Region(), "Region 0");
-    EXPECT_EQ(response.value()[0]->Conference(), domain::Conference::AFC);
+    EXPECT_EQ(response.value()[0]->getConference(), domain::Conference::AFC);
     EXPECT_EQ(response.value()[0]->Teams().size(), 0);
     EXPECT_EQ(response.value()[1]->Id(), "group-id-1");
     EXPECT_EQ(response.value()[1]->Name(), "Group 1");
     EXPECT_EQ(response.value()[1]->Region(), "Region 1");
-    EXPECT_EQ(response.value()[1]->Conference(), domain::Conference::AFC);
+    EXPECT_EQ(response.value()[1]->getConference(), domain::Conference::AFC);
     EXPECT_EQ(response.value()[1]->Teams().size(), 0);
 }
 
@@ -693,7 +693,7 @@ TEST_F(GroupDelegateTest, GetGroupSuccessTest) {
     EXPECT_EQ(response.value()->Name(), groupData["name"].get<std::string>());
     EXPECT_EQ(response.value()->Region(), groupData["region"].get<std::string>());
     domain::Conference expectedConference = groupData["conference"].get<domain::Conference>();
-    EXPECT_EQ(response.value()->Conference(), expectedConference);
+    EXPECT_EQ(response.value()->getConference(), expectedConference);
     EXPECT_EQ(response.value()->Teams().size(), 0);
 }
 
@@ -781,7 +781,7 @@ TEST_F(GroupDelegateTest, UpdateGroupSuccessTest) {
     EXPECT_EQ(capturedGroupGroupUpdate.Name(), groupRequestBody["name"].get<std::string>());
     EXPECT_EQ(capturedGroupGroupUpdate.Region(), groupRequestBody["region"].get<std::string>());
     domain::Conference expectedConference = groupRequestBody["conference"].get<domain::Conference>();
-    EXPECT_EQ(capturedGroupGroupUpdate.Conference(), expectedConference);
+    EXPECT_EQ(capturedGroupGroupUpdate.getConference(), expectedConference);
     EXPECT_EQ(capturedGroupGroupUpdate.Teams().size(), 0);
     EXPECT_TRUE(response.has_value());
 }
