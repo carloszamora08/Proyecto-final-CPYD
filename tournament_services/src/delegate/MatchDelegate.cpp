@@ -84,7 +84,7 @@ MatchDelegate::UpdateMatchScore(std::string_view tournamentId,
     }
 
     // Validar que el match ya tenga a ambos equipos
-    if (match->Home().id == "" || match->Visitor().id == "") {
+    if (match->getHome().id == "" || match->getVisitor().id == "") {
         return std::unexpected("Match teams are not ready");
     }
 
@@ -105,8 +105,8 @@ MatchDelegate::UpdateMatchScore(std::string_view tournamentId,
     event["tournamentId"] = tournamentId;
     event["matchId"] = matchId;
     event["round"] = static_cast<int>(match->Round());
-    event["homeTeamId"] = match->Home().id;
-    event["visitorTeamId"] = match->Visitor().id;
+    event["homeTeamId"] = match->getHome().id;
+    event["visitorTeamId"] = match->getVisitor().id;
     event["homeScore"] = score.homeTeamScore;
     event["visitorScore"] = score.visitorTeamScore;
     

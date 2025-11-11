@@ -51,7 +51,7 @@ inline std::expected<std::string, std::string> GroupDelegate::CreateGroup(const 
         return std::unexpected("Tournament has reached maximum number of groups");
     }
 
-    std::string conferenceStr = (group.Conference() == domain::Conference::AFC) ? "AFC" : "NFC";
+    std::string conferenceStr = (group.getConference() == domain::Conference::AFC) ? "AFC" : "NFC";
     const auto groupsInConference = groupRepository->FindByTournamentIdAndConference(tournamentId, conferenceStr);
 
     if (!groupsInConference) {
@@ -105,7 +105,7 @@ inline std::expected<void, std::string> GroupDelegate::UpdateGroup(const std::st
         return std::unexpected(tournament.error());
     }
 
-    std::string conferenceStr = (group.Conference() == domain::Conference::AFC) ? "AFC" : "NFC";
+    std::string conferenceStr = (group.getConference() == domain::Conference::AFC) ? "AFC" : "NFC";
     const auto groupsInConference = groupRepository->FindByTournamentIdAndConference(tournamentId, conferenceStr);
 
     if (!groupsInConference) {

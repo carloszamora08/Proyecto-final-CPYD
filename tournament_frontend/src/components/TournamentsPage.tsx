@@ -12,6 +12,7 @@ export default function TournamentsPage() {
     const [formData, setFormData] = useState({
         name: '',
         year: new Date().getFullYear(),
+        finished: 'no',
         format: {
             numberOfGroups: 8,
             maxTeamsPerGroup: 4,
@@ -43,6 +44,7 @@ export default function TournamentsPage() {
             setFormData({
                 name: '',
                 year: new Date().getFullYear(),
+                finished: 'no',
                 format: {
                     numberOfGroups: 8,
                     maxTeamsPerGroup: 4,
@@ -94,6 +96,9 @@ export default function TournamentsPage() {
                             <span className="badge badge-green">
                 {tournament.format.numberOfGroups} Groups
               </span>
+                            {tournament.finished === 'yes' && (
+                                <span className="badge badge-yellow">Finished</span>
+                            )}
                         </div>
                         <button
                             className="btn btn-danger"

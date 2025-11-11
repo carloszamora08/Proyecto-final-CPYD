@@ -24,17 +24,9 @@ public:
             }
         }
 
-        const auto& teams = groups[0]->Teams();
-        domain::Match match;
-        domain::Home home{teams[0].Id, teams[0].Name};
-        domain::Visitor visitor{teams[1].Id, teams[1].Name};
-        match.TournamentId() = tournament.Id();
-        match.Home() = home;
-        match.Visitor() = visitor;
-        match.Round() = domain::RoundType::REGULAR;
-        matches.push_back(match);
 
-        /*
+
+
         // Matches intragrupales
         for (const auto& group : groups) {
             const auto& teams = group->Teams();
@@ -45,8 +37,8 @@ public:
                     domain::Home home{teams[i].Id, teams[i].Name};
                     domain::Visitor visitor{teams[j].Id, teams[j].Name};
                     match.TournamentId() = tournament.Id();
-                    match.Home() = home;
-                    match.Visitor() = visitor;
+                    match.getHome() = home;
+                    match.getVisitor() = visitor;
                     match.Round() = domain::RoundType::REGULAR;
                     matches.push_back(match);
 
@@ -55,8 +47,8 @@ public:
                     domain::Home home2{teams[j].Id, teams[j].Name};
                     domain::Visitor visitor2{teams[i].Id, teams[i].Name};
                     match2.TournamentId() = tournament.Id();
-                    match2.Home() = home2;
-                    match2.Visitor() = visitor2;
+                    match2.getHome() = home2;
+                    match2.getVisitor() = visitor2;
                     match2.Round() = domain::RoundType::REGULAR;
                     matches.push_back(match2);
                 }
@@ -68,7 +60,7 @@ public:
         std::vector<std::shared_ptr<domain::Group>> nfcGroups;
 
         for (const auto& group : groups) {
-            if (group->Conference() == domain::Conference::AFC) {
+            if (group->getConference() == domain::Conference::AFC) {
                 afcGroups.push_back(group);
             } else {
                 nfcGroups.push_back(group);
@@ -97,11 +89,11 @@ public:
                     match.Round() = domain::RoundType::REGULAR;
                     
                     if (isHome) {
-                        match.Home() = domain::Home{teams1[i].Id, teams1[i].Name};
-                        match.Visitor() = domain::Visitor{teams2[j].Id, teams2[j].Name};
+                        match.getHome() = domain::Home{teams1[i].Id, teams1[i].Name};
+                        match.getVisitor() = domain::Visitor{teams2[j].Id, teams2[j].Name};
                     } else {
-                        match.Home() = domain::Home{teams2[j].Id, teams2[j].Name};
-                        match.Visitor() = domain::Visitor{teams1[i].Id, teams1[i].Name};
+                        match.getHome() = domain::Home{teams2[j].Id, teams2[j].Name};
+                        match.getVisitor() = domain::Visitor{teams1[i].Id, teams1[i].Name};
                     }
                     
                     matches.push_back(match);
@@ -126,11 +118,11 @@ public:
                     match.Round() = domain::RoundType::REGULAR;
                     
                     if (isHome) {
-                        match.Home() = domain::Home{teams1[i].Id, teams1[i].Name};
-                        match.Visitor() = domain::Visitor{teams2[j].Id, teams2[j].Name};
+                        match.getHome() = domain::Home{teams1[i].Id, teams1[i].Name};
+                        match.getVisitor() = domain::Visitor{teams2[j].Id, teams2[j].Name};
                     } else {
-                        match.Home() = domain::Home{teams2[j].Id, teams2[j].Name};
-                        match.Visitor() = domain::Visitor{teams1[i].Id, teams1[i].Name};
+                        match.getHome() = domain::Home{teams2[j].Id, teams2[j].Name};
+                        match.getVisitor() = domain::Visitor{teams1[i].Id, teams1[i].Name};
                     }
                     
                     matches.push_back(match);
@@ -157,11 +149,11 @@ public:
                     match.Round() = domain::RoundType::REGULAR;
                     
                     if (isHome) {
-                        match.Home() = domain::Home{teams1[i].Id, teams1[i].Name};
-                        match.Visitor() = domain::Visitor{teams2[j].Id, teams2[j].Name};
+                        match.getHome() = domain::Home{teams1[i].Id, teams1[i].Name};
+                        match.getVisitor() = domain::Visitor{teams2[j].Id, teams2[j].Name};
                     } else {
-                        match.Home() = domain::Home{teams2[j].Id, teams2[j].Name};
-                        match.Visitor() = domain::Visitor{teams1[i].Id, teams1[i].Name};
+                        match.getHome() = domain::Home{teams2[j].Id, teams2[j].Name};
+                        match.getVisitor() = domain::Visitor{teams1[i].Id, teams1[i].Name};
                     }
                     
                     matches.push_back(match);
@@ -186,11 +178,11 @@ public:
                     match.Round() = domain::RoundType::REGULAR;
                     
                     if (isHome) {
-                        match.Home() = domain::Home{teams1[i].Id, teams1[i].Name};
-                        match.Visitor() = domain::Visitor{teams2[j].Id, teams2[j].Name};
+                        match.getHome() = domain::Home{teams1[i].Id, teams1[i].Name};
+                        match.getVisitor() = domain::Visitor{teams2[j].Id, teams2[j].Name};
                     } else {
-                        match.Home() = domain::Home{teams2[j].Id, teams2[j].Name};
-                        match.Visitor() = domain::Visitor{teams1[i].Id, teams1[i].Name};
+                        match.getHome() = domain::Home{teams2[j].Id, teams2[j].Name};
+                        match.getVisitor() = domain::Visitor{teams1[i].Id, teams1[i].Name};
                     }
                     
                     matches.push_back(match);
@@ -216,11 +208,11 @@ public:
                     match.Round() = domain::RoundType::REGULAR;
                     
                     if (div1IsHome) {
-                        match.Home() = domain::Home{teams1[teamIndex].Id, teams1[teamIndex].Name};
-                        match.Visitor() = domain::Visitor{teams2[teamIndex].Id, teams2[teamIndex].Name};
+                        match.getHome() = domain::Home{teams1[teamIndex].Id, teams1[teamIndex].Name};
+                        match.getVisitor() = domain::Visitor{teams2[teamIndex].Id, teams2[teamIndex].Name};
                     } else {
-                        match.Home() = domain::Home{teams2[teamIndex].Id, teams2[teamIndex].Name};
-                        match.Visitor() = domain::Visitor{teams1[teamIndex].Id, teams1[teamIndex].Name};
+                        match.getHome() = domain::Home{teams2[teamIndex].Id, teams2[teamIndex].Name};
+                        match.getVisitor() = domain::Visitor{teams1[teamIndex].Id, teams1[teamIndex].Name};
                     }
                     
                     matches.push_back(match);
@@ -244,11 +236,11 @@ public:
                     match.Round() = domain::RoundType::REGULAR;
                     
                     if (div1IsHome) {
-                        match.Home() = domain::Home{teams1[teamIndex].Id, teams1[teamIndex].Name};
-                        match.Visitor() = domain::Visitor{teams2[teamIndex].Id, teams2[teamIndex].Name};
+                        match.getHome() = domain::Home{teams1[teamIndex].Id, teams1[teamIndex].Name};
+                        match.getVisitor() = domain::Visitor{teams2[teamIndex].Id, teams2[teamIndex].Name};
                     } else {
-                        match.Home() = domain::Home{teams2[teamIndex].Id, teams2[teamIndex].Name};
-                        match.Visitor() = domain::Visitor{teams1[teamIndex].Id, teams1[teamIndex].Name};
+                        match.getHome() = domain::Home{teams2[teamIndex].Id, teams2[teamIndex].Name};
+                        match.getVisitor() = domain::Visitor{teams1[teamIndex].Id, teams1[teamIndex].Name};
                     }
                     
                     matches.push_back(match);
@@ -282,17 +274,16 @@ public:
                 match.Round() = domain::RoundType::REGULAR;
                 
                 if (afcIsHome) {
-                    match.Home() = domain::Home{afcTeams[teamIndex].Id, afcTeams[teamIndex].Name};
-                    match.Visitor() = domain::Visitor{nfcTeams[teamIndex].Id, nfcTeams[teamIndex].Name};
+                    match.getHome() = domain::Home{afcTeams[teamIndex].Id, afcTeams[teamIndex].Name};
+                    match.getVisitor() = domain::Visitor{nfcTeams[teamIndex].Id, nfcTeams[teamIndex].Name};
                 } else {
-                    match.Home() = domain::Home{nfcTeams[teamIndex].Id, nfcTeams[teamIndex].Name};
-                    match.Visitor() = domain::Visitor{afcTeams[teamIndex].Id, afcTeams[teamIndex].Name};
+                    match.getHome() = domain::Home{nfcTeams[teamIndex].Id, nfcTeams[teamIndex].Name};
+                    match.getVisitor() = domain::Visitor{afcTeams[teamIndex].Id, afcTeams[teamIndex].Name};
                 }
                 
                 matches.push_back(match);
             }
         }
-        */
 
         return matches;
     }
@@ -308,7 +299,7 @@ public:
         std::vector<std::shared_ptr<domain::Group>> nfcGroups;
 
         for (const auto& group : groups) {
-            if (group->Conference() == domain::Conference::AFC) {
+            if (group->getConference() == domain::Conference::AFC) {
                 afcGroups.push_back(group);
             } else {
                 nfcGroups.push_back(group);
@@ -335,8 +326,8 @@ public:
         }
 
         // Asignar matches a bye teams
-        playoffMatches[6].Home() = domain::Home(afcPlayoffTeams[0].id, afcPlayoffTeams[0].name);
-        playoffMatches[8].Home() = domain::Home(afcPlayoffTeams[1].id, afcPlayoffTeams[1].name);
+        playoffMatches[6].getHome() = domain::Home(afcPlayoffTeams[0].id, afcPlayoffTeams[0].name);
+        playoffMatches[8].getHome() = domain::Home(afcPlayoffTeams[1].id, afcPlayoffTeams[1].name);
 
         // Conference Championships (Semifinals) - 2 matches vacíos
         for (int i = 0; i < 2; i++) {
@@ -421,34 +412,34 @@ public:
             const auto& score = match->MatchScore().value();
             
             // Check if teams are in our groups before updating stats
-            bool homeInGroup = stats.find(match->Home().id) != stats.end();
-            bool visitorInGroup = stats.find(match->Visitor().id) != stats.end();
+            bool homeInGroup = stats.find(match->getHome().id) != stats.end();
+            bool visitorInGroup = stats.find(match->getVisitor().id) != stats.end();
             
             // Update home team stats (if in group)
             if (homeInGroup) {
-                stats[match->Home().id].pointsFor += score.homeTeamScore;
-                stats[match->Home().id].pointsAgainst += score.visitorTeamScore;
+                stats[match->getHome().id].pointsFor += score.homeTeamScore;
+                stats[match->getHome().id].pointsAgainst += score.visitorTeamScore;
                 
                 if (score.homeTeamScore > score.visitorTeamScore) {
-                    stats[match->Home().id].wins++;
+                    stats[match->getHome().id].wins++;
                 } else if (score.homeTeamScore < score.visitorTeamScore) {
-                    stats[match->Home().id].losses++;
+                    stats[match->getHome().id].losses++;
                 } else {
-                    stats[match->Home().id].ties++;
+                    stats[match->getHome().id].ties++;
                 }
             }
             
             // Update visitor team stats (if in group)
             if (visitorInGroup) {
-                stats[match->Visitor().id].pointsFor += score.visitorTeamScore;
-                stats[match->Visitor().id].pointsAgainst += score.homeTeamScore;
+                stats[match->getVisitor().id].pointsFor += score.visitorTeamScore;
+                stats[match->getVisitor().id].pointsAgainst += score.homeTeamScore;
                 
                 if (score.homeTeamScore < score.visitorTeamScore) {
-                    stats[match->Visitor().id].wins++;
+                    stats[match->getVisitor().id].wins++;
                 } else if (score.homeTeamScore > score.visitorTeamScore) {
-                    stats[match->Visitor().id].losses++;
+                    stats[match->getVisitor().id].losses++;
                 } else {
-                    stats[match->Visitor().id].ties++;
+                    stats[match->getVisitor().id].ties++;
                 }
             }
         }
@@ -548,8 +539,8 @@ private:
         }
 
         for (const auto& match : matches) {
-            if (groupTeamIds.count(match->Home().id) ||
-                groupTeamIds.count(match->Visitor().id)) {
+            if (groupTeamIds.count(match->getHome().id) ||
+                groupTeamIds.count(match->getVisitor().id)) {
                 groupMatches.push_back(match);
             }
         }
@@ -561,7 +552,7 @@ private:
             return {"", ""};
         }
 
-        std::println("[NFL Strategy] Group {}, in {} conference standings", group->Name(), ((group->Conference() == domain::Conference::AFC) ? "AFC" : "NFC"));
+        std::println("[NFL Strategy] Group {}, in {} conference standings", group->Name(), ((group->getConference() == domain::Conference::AFC) ? "AFC" : "NFC"));
         for (int i = 0; i < ranked.size(); i++) {
 
             std::println("[NFL Strategy] {} - id: {}", i + 1, ranked[i]);
@@ -594,8 +585,8 @@ private:
             domain::Home homeObj{playoffTeams[home].id, playoffTeams[home].name};
             domain::Visitor visitorObj{playoffTeams[away].id, playoffTeams[away].name};
             match.TournamentId() = tournamentId;
-            match.Home() = homeObj;
-            match.Visitor() = visitorObj;
+            match.getHome() = homeObj;
+            match.getVisitor() = visitorObj;
             match.Round() = domain::RoundType::WILDCARD;
             matches.push_back(match);
         }

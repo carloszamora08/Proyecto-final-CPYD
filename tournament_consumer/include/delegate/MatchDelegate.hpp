@@ -294,17 +294,17 @@ inline void MatchDelegate::AdvancePlayoffMatch(const std::string& matchId) {
         }
 
         // Asignar equipo a espacio disponible
-        if (nextMatch.value()->Home().id == "") {
+        if (nextMatch.value()->getHome().id == "") {
             if (match->MatchScore()->GetWinner() == domain::Winner::HOME) {
-                nextMatch.value()->Home() = match->Home();
+                nextMatch.value()->getHome() = match->getHome();
             } else {
-                nextMatch.value()->Home() = domain::Home(match->Visitor().id, match->Visitor().name);
+                nextMatch.value()->getHome() = domain::Home(match->getVisitor().id, match->getVisitor().name);
             }
         } else {
             if (match->MatchScore()->GetWinner() == domain::Winner::HOME) {
-                nextMatch.value()->Visitor() = domain::Visitor(match->Home().id, match->Home().name);
+                nextMatch.value()->getVisitor() = domain::Visitor(match->getHome().id, match->getHome().name);
             } else {
-                nextMatch.value()->Visitor() = match->Visitor();
+                nextMatch.value()->getVisitor() = match->getVisitor();
             }
         }
 
