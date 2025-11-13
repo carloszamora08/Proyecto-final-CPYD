@@ -1,5 +1,5 @@
-#ifndef CONSUMER_MATCHDELEGATE_HPP
-#define CONSUMER_MATCHDELEGATE_HPP
+#ifndef CONSUMER_MATCHDELEGATE2_HPP
+#define CONSUMER_MATCHDELEGATE2_HPP
 
 #include <memory>
 #include <vector>
@@ -13,18 +13,18 @@
 #include "domain/Match.hpp"
 #include "domain/NFLStrategy.hpp"
 
-class MatchDelegate {
+class MatchDelegate2 {
     std::shared_ptr<IMatchRepository> matchRepository;
     std::shared_ptr<IGroupRepository> groupRepository;
     std::shared_ptr<TournamentRepository> tournamentRepository;
 
 public:
-    MatchDelegate(const std::shared_ptr<IMatchRepository>& matchRepository,
+    MatchDelegate2(const std::shared_ptr<IMatchRepository>& matchRepository,
                   const std::shared_ptr<IGroupRepository>& groupRepository,
                   const std::shared_ptr<TournamentRepository>& tournamentRepository);
 
-    void ProcessTeamAddition(const TeamAddEvent& teamAddEvent);
-    void ProcessScoreUpdate(const ScoreUpdateEvent& scoreUpdateEvent);
+    virtual void ProcessTeamAddition(const TeamAddEvent& teamAddEvent);
+    virtual void ProcessScoreUpdate(const ScoreUpdateEvent& scoreUpdateEvent);
 
 private:
     bool IsTournamentComplete(const std::string& tournamentId);
@@ -35,7 +35,7 @@ private:
     void AdvancePlayoffMatch(const std::string& matchId);
 };
 
-inline MatchDelegate::MatchDelegate(
+inline MatchDelegate2::MatchDelegate2(
     const std::shared_ptr<IMatchRepository>& matchRepository,
     const std::shared_ptr<IGroupRepository>& groupRepository,
     const std::shared_ptr<TournamentRepository>& tournamentRepository)
@@ -43,37 +43,37 @@ inline MatchDelegate::MatchDelegate(
       groupRepository(groupRepository),
       tournamentRepository(tournamentRepository) {}
 
-inline void MatchDelegate::ProcessTeamAddition(const TeamAddEvent& teamAddEvent) {
-    std::println("[MatchDelegate] Processing team addition for tournament: {}", teamAddEvent.tournamentId);
+inline void MatchDelegate2::ProcessTeamAddition(const TeamAddEvent& teamAddEvent) {
+    std::println("[MatchDelegate2] Processing team addition for tournament: {}", teamAddEvent.tournamentId);
 
     if (IsTournamentComplete(teamAddEvent.tournamentId)) {
-        std::println("[MatchDelegate] Tournament is complete! Creating matches...");
+        std::println("[MatchDelegate2] Tournament is complete! Creating matches...");
         CreateRegularPhaseMatches(teamAddEvent.tournamentId);
     } else {
-        std::println("[MatchDelegate] Tournament not complete yet, waiting for more teams...");
+        std::println("[MatchDelegate2] Tournament not complete yet, waiting for more teams...");
     }
 }
 
-inline void MatchDelegate::ProcessScoreUpdate(const ScoreUpdateEvent& scoreUpdateEvent) {
-    std::println("[MatchDelegate] Processing score update for tournament: {}", scoreUpdateEvent.tournamentId);
+inline void MatchDelegate2::ProcessScoreUpdate(const ScoreUpdateEvent& scoreUpdateEvent) {
+    std::println("[MatchDelegate2] Processing score update for tournament: {}", scoreUpdateEvent.tournamentId);
 
     if (AllRegularMatchesPlayed(scoreUpdateEvent.tournamentId)) {
         if (CheckIfInPlayoffs(scoreUpdateEvent.tournamentId)) {
             AdvancePlayoffMatch(scoreUpdateEvent.matchId);
         } else {
-            std::println("[MatchDelegate] Regular season is complete! Creating Wild Card playoff matches...");
+            std::println("[MatchDelegate2] Regular season is complete! Creating Wild Card playoff matches...");
             CreatePlayoffMatches(scoreUpdateEvent.tournamentId);
         }
     } else {
-        std::println("[MatchDelegate] Regular season not complete yet, waiting for more scores...");
+        std::println("[MatchDelegate2] Regular season not complete yet, waiting for more scores...");
     }
 }
 
-inline bool MatchDelegate::IsTournamentComplete(const std::string& tournamentId) {
+inline bool MatchDelegate2::IsTournamentComplete(const std::string& tournamentId) {
     auto groupsResult = groupRepository->FindByTournamentId(tournamentId);
 
     if (!groupsResult) {
-        std::println("[MatchDelegate] Error getting groups: {}", groupsResult.error());
+        std::println("[MatchDelegate2] Error getting groups: {}", groupsResult.error());
         return false;
     }
 
@@ -81,7 +81,7 @@ inline bool MatchDelegate::IsTournamentComplete(const std::string& tournamentId)
 
     auto tournamentResult = tournamentRepository->ReadById(tournamentId);
     if (!tournamentResult) {
-        std::println("[MatchDelegate] Error getting tournament: {}", tournamentResult.error());
+        std::println("[MatchDelegate2] Error getting tournament: {}", tournamentResult.error());
         return false;
     }
 
@@ -89,14 +89,14 @@ inline bool MatchDelegate::IsTournamentComplete(const std::string& tournamentId)
     int expectedGroups = tournament->Format().NumberOfGroups();
     int teamsPerGroup = tournament->Format().MaxTeamsPerGroup();
 
-    std::println("[MatchDelegate] Tournament has {} groups, expected {}", groups.size(), expectedGroups);
+    std::println("[MatchDelegate2] Tournament has {} groups, expected {}", groups.size(), expectedGroups);
 
     if (groups.size() != expectedGroups) {
         return false;
     }
 
     for (const auto& group : groups) {
-        std::println("[MatchDelegate] Group '{}' has {} teams (expected {})",
+        std::println("[MatchDelegate2] Group '{}' has {} teams (expected {})",
                      group->Name(), group->Teams().size(), teamsPerGroup);
 
         if (group->Teams().size() != teamsPerGroup) {
@@ -107,7 +107,7 @@ inline bool MatchDelegate::IsTournamentComplete(const std::string& tournamentId)
     return true;
 }
 
-inline bool MatchDelegate::AllRegularMatchesPlayed(const std::string& tournamentId) {
+inline bool MatchDelegate2::AllRegularMatchesPlayed(const std::string& tournamentId) {
     auto pendingMatches = matchRepository->FindPendingMatchesByTournamentId(tournamentId);
 
     if (!pendingMatches) {
@@ -125,19 +125,19 @@ inline bool MatchDelegate::AllRegularMatchesPlayed(const std::string& tournament
     return regularPending == 0;
 }
 
-inline void MatchDelegate::CreateRegularPhaseMatches(const std::string& tournamentId) {
-    std::println("[MatchDelegate] Creating regular phase matches for tournament {}", tournamentId);
+inline void MatchDelegate2::CreateRegularPhaseMatches(const std::string& tournamentId) {
+    std::println("[MatchDelegate2] Creating regular phase matches for tournament {}", tournamentId);
 
     auto tournamentResult = tournamentRepository->ReadById(tournamentId);
     if (!tournamentResult) {
-        std::println("[MatchDelegate] ERROR: Cannot get tournament: {}", tournamentResult.error());
+        std::println("[MatchDelegate2] ERROR: Cannot get tournament: {}", tournamentResult.error());
         return;
     }
     auto tournament = *tournamentResult;
 
     auto groupsResult = groupRepository->FindByTournamentId(tournamentId);
     if (!groupsResult) {
-        std::println("[MatchDelegate] ERROR: Cannot get groups: {}", groupsResult.error());
+        std::println("[MatchDelegate2] ERROR: Cannot get groups: {}", groupsResult.error());
         return;
     }
     auto groups = *groupsResult;
@@ -147,12 +147,12 @@ inline void MatchDelegate::CreateRegularPhaseMatches(const std::string& tourname
     auto matchesResult = strategy.CreateRegularPhaseMatches(*tournament, groups);
 
     if (!matchesResult) {
-        std::println("[MatchDelegate] ERROR: Strategy failed: {}", matchesResult.error());
+        std::println("[MatchDelegate2] ERROR: Strategy failed: {}", matchesResult.error());
         return;
     }
 
     auto matches = *matchesResult;
-    std::println("[MatchDelegate] Strategy created {} matches", matches.size());
+    std::println("[MatchDelegate2] Strategy created {} matches", matches.size());
 
     // Guardar cada match en la BD
     int successCount = 0;
@@ -161,34 +161,34 @@ inline void MatchDelegate::CreateRegularPhaseMatches(const std::string& tourname
         if (result) {
             successCount++;
         } else {
-            std::println("[MatchDelegate] ERROR creating match: {}", result.error());
+            std::println("[MatchDelegate2] ERROR creating match: {}", result.error());
         }
     }
 
-    std::println("[MatchDelegate] SUCCESS: Created {}/{} matches for tournament {}",
+    std::println("[MatchDelegate2] SUCCESS: Created {}/{} matches for tournament {}",
                  successCount, matches.size(), tournamentId);
 }
 
-inline void MatchDelegate::CreatePlayoffMatches(const std::string& tournamentId) {
-    std::println("[MatchDelegate] Creating playoff matches for tournament {}", tournamentId);
+inline void MatchDelegate2::CreatePlayoffMatches(const std::string& tournamentId) {
+    std::println("[MatchDelegate2] Creating playoff matches for tournament {}", tournamentId);
 
     auto tournamentResult = tournamentRepository->ReadById(tournamentId);
     if (!tournamentResult) {
-        std::println("[MatchDelegate] ERROR: Cannot get tournament: {}", tournamentResult.error());
+        std::println("[MatchDelegate2] ERROR: Cannot get tournament: {}", tournamentResult.error());
         return;
     }
     auto tournament = *tournamentResult;
 
     auto groupsResult = groupRepository->FindByTournamentId(tournamentId);
     if (!groupsResult) {
-        std::println("[MatchDelegate] ERROR: Cannot get groups: {}", groupsResult.error());
+        std::println("[MatchDelegate2] ERROR: Cannot get groups: {}", groupsResult.error());
         return;
     }
     auto groups = *groupsResult;
 
     auto regularMatchesResult = matchRepository->FindByTournamentId(tournamentId);
     if (!regularMatchesResult) {
-        std::println("[MatchDelegate] ERROR: Cannot get regular season matches: {}", regularMatchesResult.error());
+        std::println("[MatchDelegate2] ERROR: Cannot get regular season matches: {}", regularMatchesResult.error());
         return;
     }
     auto regularMatches = *regularMatchesResult;
@@ -198,12 +198,12 @@ inline void MatchDelegate::CreatePlayoffMatches(const std::string& tournamentId)
     auto matchesResult = strategy.CreatePlayoffMatches(*tournament, regularMatches, groups);
 
     if (!matchesResult) {
-        std::println("[MatchDelegate] ERROR: Strategy failed: {}", matchesResult.error());
+        std::println("[MatchDelegate2] ERROR: Strategy failed: {}", matchesResult.error());
         return;
     }
 
     auto matches = *matchesResult;
-    std::println("[MatchDelegate] Strategy created {} playoff matches", matches.size());
+    std::println("[MatchDelegate2] Strategy created {} playoff matches", matches.size());
 
     std::vector<std::string> playoffMatchesIds;
     std::vector<std::shared_ptr<domain::Match>> playoffMatches;
@@ -217,7 +217,7 @@ inline void MatchDelegate::CreatePlayoffMatches(const std::string& tournamentId)
             playoffMatchesIds.push_back(*result);
             playoffMatches.push_back(*matchRepository->ReadById(*result));
         } else {
-            std::println("[MatchDelegate] ERROR creating match: {}", result.error());
+            std::println("[MatchDelegate2] ERROR creating match: {}", result.error());
         }
     }
 
@@ -244,40 +244,40 @@ inline void MatchDelegate::CreatePlayoffMatches(const std::string& tournamentId)
         matchRepository->Update(playoffMatch->Id(), *playoffMatch);
     }
 
-    std::println("[MatchDelegate] SUCCESS: Created {}/{} playoff matches for tournament {}",
+    std::println("[MatchDelegate2] SUCCESS: Created {}/{} playoff matches for tournament {}",
                  successCount, matches.size(), tournamentId);
 }
 
-inline bool MatchDelegate::CheckIfInPlayoffs(const std::string& tournamentId) {
-    std::println("[MatchDelegate] Checking if tournament {} has entered playoffs", tournamentId);
+inline bool MatchDelegate2::CheckIfInPlayoffs(const std::string& tournamentId) {
+    std::println("[MatchDelegate2] Checking if tournament {} has entered playoffs", tournamentId);
 
     auto tournamentResult = tournamentRepository->ReadById(tournamentId);
     if (!tournamentResult) {
-        std::println("[MatchDelegate] ERROR: Cannot get tournament: {}", tournamentResult.error());
+        std::println("[MatchDelegate2] ERROR: Cannot get tournament: {}", tournamentResult.error());
         return false;
     }
     auto tournament = *tournamentResult;
 
     auto matchesResult = matchRepository->FindByTournamentIdAndRound(tournamentId, domain::RoundType::WILDCARD);
     if (!matchesResult) {
-        std::println("[MatchDelegate] ERROR: Cannot get matches: {}", matchesResult.error());
+        std::println("[MatchDelegate2] ERROR: Cannot get matches: {}", matchesResult.error());
         return false;
     }
     auto matches = *matchesResult;
 
     if (matches.size() == 0) {
-        std::println("[MatchDelegate] Tournmanet {} is still in regular season", tournamentId);
+        std::println("[MatchDelegate2] Tournmanet {} is still in regular season", tournamentId);
         return false;
     } else {
-        std::println("[MatchDelegate] Tournmanet {} is in playoffs", tournamentId);
+        std::println("[MatchDelegate2] Tournmanet {} is in playoffs", tournamentId);
         return true;
     }
 }
 
-inline void MatchDelegate::AdvancePlayoffMatch(const std::string& matchId) {
+inline void MatchDelegate2::AdvancePlayoffMatch(const std::string& matchId) {
     auto matchResult = matchRepository->ReadById(matchId);
     if (!matchResult) {
-        std::println("[MatchDelegate] ERROR: Cannot get match: {}", matchResult.error());
+        std::println("[MatchDelegate2] ERROR: Cannot get match: {}", matchResult.error());
         return;
     }
     auto match = *matchResult;
@@ -289,7 +289,7 @@ inline void MatchDelegate::AdvancePlayoffMatch(const std::string& matchId) {
         
         // Verificar que el match exista
         if (!nextMatch) {
-            std::println("[MatchDelegate] ERROR: Cannot get next match: {}", nextMatch.error());
+            std::println("[MatchDelegate2] ERROR: Cannot get next match: {}", nextMatch.error());
             return;
         }
 
@@ -312,4 +312,4 @@ inline void MatchDelegate::AdvancePlayoffMatch(const std::string& matchId) {
     }
 }
 
-#endif //CONSUMER_MATCHDELEGATE_HPP
+#endif //CONSUMER_MATCHDELEGATE2_HPP

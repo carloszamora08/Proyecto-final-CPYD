@@ -164,6 +164,12 @@ namespace domain {
             json["home"].get_to(home);
             match.getHome() = home;
         }
+
+        if (json.contains("visitor") && json["visitor"].is_object()) {
+            Visitor visitor;
+            json["visitor"].get_to(visitor);
+            match.getVisitor() = visitor;
+        }
         
         if (json.contains("round")) {
             match.Round() = stringToRoundType(json["round"].get<std::string>());

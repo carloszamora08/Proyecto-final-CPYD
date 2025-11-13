@@ -4,12 +4,16 @@ set(TEST_SOURCES
         controller/TeamControllerTest.cpp
         controller/TournamentControllerTest.cpp
         controller/GroupControllerTest.cpp
+        controller/MatchControllerTest.cpp
         delegate/TournamentDelegateTest.cpp
         delegate/TeamDelegateTest.cpp
         delegate/GroupDelegateTest.cpp
+        cms/GroupAddTeamListenerTest.cpp
+        cms/ScoreUpdateListenerTest.cpp
         ../src/controller/TeamController.cpp
         ../src/controller/TournamentController.cpp
         ../include/controller/GroupController.hpp
+        ../include/controller/MatchController.hpp
         ../src/delegate/TournamentDelegate.cpp
         ../src/delegate/TeamDelegate.cpp
         ../include/delegate/GroupDelegate.hpp
@@ -19,11 +23,14 @@ set(TEST_SOURCES
         ../include/delegate/IMatchDelegate.h
         ../src/delegate/MatchDelegate.cpp
         ../src/controller/MatchController.cpp
+        ../../tournament_consumer/include/cms/GroupAddTeamListener.hpp
         ../../tournament_consumer/include/cms/ScoreUpdateListener.hpp
 )
 
 set(SOURCES ${TEST_SOURCES})
-include_directories(../include)
+include_directories(
+        ../include
+        ../../tournament_consumer/include)
 
 find_package(GTest CONFIG REQUIRED)
 

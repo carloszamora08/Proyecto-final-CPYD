@@ -61,8 +61,13 @@ inline void QueueMessageListener::Stop() {
     if (worker.joinable())
         worker.join();
 
-    messageConsumer->close();
-    session->close();
+    if (messageConsumer) {
+        messageConsumer->close();
+    }
+    
+    if (session) {
+        session->close();
+    }
     // connection->close();
 }
 

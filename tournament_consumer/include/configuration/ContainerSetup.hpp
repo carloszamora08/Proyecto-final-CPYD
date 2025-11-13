@@ -20,7 +20,7 @@
 #include "cms/QueueMessageListener.hpp"
 #include "cms/GroupAddTeamListener.hpp"
 #include "cms/ScoreUpdateListener.hpp"
-#include "delegate/MatchDelegate.hpp"
+#include "delegate/MatchDelegate2.hpp"
 
 namespace config {
     inline std::shared_ptr<Hypodermic::Container> containerSetup() {
@@ -62,8 +62,8 @@ namespace config {
             .as<IMatchRepository>()
             .singleInstance();
 
-        // Registrar MatchDelegate
-        builder.registerType<MatchDelegate>()
+        // Registrar MatchDelegate2
+        builder.registerType<MatchDelegate2>()
             .singleInstance();
 
         // Registrar GroupAddTeamListener con sus dependencias
