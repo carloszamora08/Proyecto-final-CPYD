@@ -46,7 +46,7 @@ TEST_F(TournamentControllerTest, CreateTournamentSucessTest) {
             )
         );
 
-    nlohmann::json tournamentRequestBody = {{"id", "new-id"}, {"name", "new tournament"}, {"year", 2025}};
+    nlohmann::json tournamentRequestBody = {{"id", "new-id"}, {"name", "new tournament"}, {"year", 2025}, {"finished", "no"}};
     crow::request tournamentRequest;
     tournamentRequest.body = tournamentRequestBody.dump();
     auto response = tournamentController->CreateTournament(tournamentRequest);
@@ -56,6 +56,7 @@ TEST_F(TournamentControllerTest, CreateTournamentSucessTest) {
     EXPECT_EQ(capturedTournament->Id(), tournamentRequestBody.at("id").get<std::string>());
     EXPECT_EQ(capturedTournament->Name(), tournamentRequestBody.at("name").get<std::string>());
     EXPECT_EQ(capturedTournament->Year(), tournamentRequestBody.at("year").get<int>());
+    EXPECT_EQ(capturedTournament->Finished(), tournamentRequestBody.at("finished").get<std::string>());
     EXPECT_EQ(response.code, crow::CREATED);
     EXPECT_EQ(response.get_header_value("location"), "new-id");
 }
@@ -70,7 +71,7 @@ TEST_F(TournamentControllerTest, CreateTournamentDBInsertionFailTest) {
             )
         );
     
-    nlohmann::json tournamentRequestBody = {{"id", "existing-id"}, {"name", "existing tournament"}, {"year", 2025}};
+    nlohmann::json tournamentRequestBody = {{"id", "existing-id"}, {"name", "existing tournament"}, {"year", 2025}, {"finished", "no"}};
     crow::request tournamentRequest;
     tournamentRequest.body = tournamentRequestBody.dump();
     auto response = tournamentController->CreateTournament(tournamentRequest);
@@ -80,6 +81,7 @@ TEST_F(TournamentControllerTest, CreateTournamentDBInsertionFailTest) {
     EXPECT_EQ(capturedTournament->Id(), tournamentRequestBody.at("id").get<std::string>());
     EXPECT_EQ(capturedTournament->Name(), tournamentRequestBody.at("name").get<std::string>());
     EXPECT_EQ(capturedTournament->Year(), tournamentRequestBody.at("year").get<int>());
+    EXPECT_EQ(capturedTournament->Finished(), tournamentRequestBody.at("finished").get<std::string>());
     EXPECT_EQ(response.code, crow::CONFLICT);
     EXPECT_EQ(response.body, "Tournament insertion failed");
 }
@@ -103,7 +105,7 @@ TEST_F(TournamentControllerTest, CreateTournamentInvalidDataTest) {
         .Times(0);
     
     crow::request tournamentRequest;
-    tournamentRequest.body = R"({"id": 123, "name": 456, "year": "789"})";
+    tournamentRequest.body = R"({"id": 123, "name": 456, "year": "789", "finished": 50})";
     auto response = tournamentController->CreateTournament(tournamentRequest);
 
     testing::Mock::VerifyAndClearExpectations(&tournamentDelegateMock);
@@ -115,7 +117,7 @@ TEST_F(TournamentControllerTest, CreateTournamentInvalidDataTest) {
 TEST_F(TournamentControllerTest, ReadTournamentSuccessTest) {
     std::string id;
 
-    nlohmann::json body = {{"id", "read-id"}, {"name", "read tournament"}, {"year", 2025}};
+    nlohmann::json body = {{"id", "read-id"}, {"name", "read tournament"}, {"year", 2025}, {"finished", "no"}};
     auto tournament = std::make_shared<domain::Tournament>(body);
 
     EXPECT_CALL(*tournamentDelegateMock, GetTournament(::testing::_))
@@ -135,6 +137,7 @@ TEST_F(TournamentControllerTest, ReadTournamentSuccessTest) {
     EXPECT_EQ(bodyJson["id"], body.at("id").get<std::string>());
     EXPECT_EQ(bodyJson["name"], body.at("name").get<std::string>());
     EXPECT_EQ(bodyJson["year"], body.at("year").get<int>());
+    EXPECT_EQ(bodyJson["finished"], body.at("finished").get<std::string>());
     EXPECT_EQ(response.code, crow::OK);
     EXPECT_EQ(response.get_header_value(CONTENT_TYPE_HEADER), JSON_CONTENT_TYPE);
 }
@@ -175,10 +178,10 @@ TEST_F(TournamentControllerTest, ReadTournamentInvalidIDTest) {
 TEST_F(TournamentControllerTest, ReadAllTournamentsSuccessTest) {
     std::vector<std::shared_ptr<domain::Tournament>> tournaments;
 
-    nlohmann::json body1 = {{"id", "first-id"}, {"name", "first tournament"}, {"year", 2024}};
+    nlohmann::json body1 = {{"id", "first-id"}, {"name", "first tournament"}, {"year", 2024}, {"finished", "no"}};
     tournaments.push_back(std::make_shared<domain::Tournament>(body1));
 
-    nlohmann::json body2 = {{"id", "second-id"}, {"name", "second tournament"}, {"year", 2026}};
+    nlohmann::json body2 = {{"id", "second-id"}, {"name", "second tournament"}, {"year", 2026}, {"finished", "no"}};
     tournaments.push_back(std::make_shared<domain::Tournament>(body2));
 
     EXPECT_CALL(*tournamentDelegateMock, ReadAll())
@@ -193,9 +196,11 @@ TEST_F(TournamentControllerTest, ReadAllTournamentsSuccessTest) {
     EXPECT_EQ(bodyJson[0]["id"], body1.at("id").get<std::string>());
     EXPECT_EQ(bodyJson[0]["name"], body1.at("name").get<std::string>());
     EXPECT_EQ(bodyJson[0]["year"], body1.at("year").get<int>());
+    EXPECT_EQ(bodyJson[0]["finished"], body1.at("finished").get<std::string>());
     EXPECT_EQ(bodyJson[1]["id"], body2.at("id").get<std::string>());
     EXPECT_EQ(bodyJson[1]["name"], body2.at("name").get<std::string>());
     EXPECT_EQ(bodyJson[1]["year"], body2.at("year").get<int>());
+    EXPECT_EQ(bodyJson[1]["finished"], body2.at("finished").get<std::string>());
     EXPECT_EQ(response.code, crow::OK);
     EXPECT_EQ(response.get_header_value(CONTENT_TYPE_HEADER), JSON_CONTENT_TYPE);
 }
@@ -241,7 +246,7 @@ TEST_F(TournamentControllerTest, UpdateTournamentSuccessTest) {
             )
         );
 
-    nlohmann::json tournamentRequestBody = {{"id", "updated-id"}, {"name", "updated tournament"}, {"year", 2025}};
+    nlohmann::json tournamentRequestBody = {{"id", "updated-id"}, {"name", "updated tournament"}, {"year", 2025}, {"finished", "no"}};
     crow::request tournamentRequest;
     tournamentRequest.body = tournamentRequestBody.dump();
     std::string tournamentId = "updated-id";
@@ -253,6 +258,7 @@ TEST_F(TournamentControllerTest, UpdateTournamentSuccessTest) {
     EXPECT_EQ(capturedTournament->Id(), tournamentRequestBody.at("id").get<std::string>());
     EXPECT_EQ(capturedTournament->Name(), tournamentRequestBody.at("name").get<std::string>());
     EXPECT_EQ(capturedTournament->Year(), tournamentRequestBody.at("year").get<int>());
+    EXPECT_EQ(capturedTournament->Finished(), tournamentRequestBody.at("finished").get<std::string>());
     EXPECT_EQ(response.code, crow::NO_CONTENT);
 }
 
@@ -268,7 +274,7 @@ TEST_F(TournamentControllerTest, UpdateTournamentFailTest) {
             )
         );
 
-    nlohmann::json tournamentRequestBody = {{"id", "non-existing-id"}, {"name", "updated tournament"}, {"year", 2025}};
+    nlohmann::json tournamentRequestBody = {{"id", "non-existing-id"}, {"name", "updated tournament"}, {"year", 2025}, {"finished", "no"}};
     crow::request tournamentRequest;
     tournamentRequest.body = tournamentRequestBody.dump();
     std::string tournamentId = "non-existing-id";
@@ -280,6 +286,7 @@ TEST_F(TournamentControllerTest, UpdateTournamentFailTest) {
     EXPECT_EQ(capturedTournament->Id(), tournamentRequestBody.at("id").get<std::string>());
     EXPECT_EQ(capturedTournament->Name(), tournamentRequestBody.at("name").get<std::string>());
     EXPECT_EQ(capturedTournament->Year(), tournamentRequestBody.at("year").get<int>());
+    EXPECT_EQ(capturedTournament->Finished(), tournamentRequestBody.at("finished").get<std::string>());
     EXPECT_EQ(response.code, crow::NOT_FOUND);
     EXPECT_EQ(response.body, "Tournament not found");
 }
@@ -288,7 +295,7 @@ TEST_F(TournamentControllerTest, UpdateTournamentInvalidIDTest) {
     EXPECT_CALL(*tournamentDelegateMock, UpdateTournament(::testing::_, ::testing::_))
         .Times(0);
 
-    nlohmann::json tournamentRequestBody = {{"id", "bad id"}, {"name", "bad tournament"}, {"year", 2025}};
+    nlohmann::json tournamentRequestBody = {{"id", "bad id"}, {"name", "bad tournament"}, {"year", 2025}, {"finished", "no"}};
     crow::request tournamentRequest;
     tournamentRequest.body = tournamentRequestBody.dump();
     std::string tournamentId = "bad id";
@@ -304,7 +311,7 @@ TEST_F(TournamentControllerTest, UpdateTournamentDBFailTest) {
     EXPECT_CALL(*tournamentDelegateMock, UpdateTournament(::testing::_, ::testing::_))
         .WillOnce(testing::Return(std::unexpected<std::string>("Database connection failed")));
 
-    nlohmann::json tournamentRequestBody = {{"id", "id"}, {"name", "tournament"}, {"year", 2025}};
+    nlohmann::json tournamentRequestBody = {{"id", "id"}, {"name", "tournament"}, {"year", 2025}, {"finished", "no"}};
     crow::request tournamentRequest;
     tournamentRequest.body = tournamentRequestBody.dump();
     std::string tournamentId = "id";
@@ -336,7 +343,7 @@ TEST_F(TournamentControllerTest, UpdateTournamentInvalidDataTest) {
         .Times(0);
     
     crow::request tournamentRequest;
-    tournamentRequest.body = R"({"id": 123, "name": 456, "year": "789"})";
+    tournamentRequest.body = R"({"id": 123, "name": 456, "year": "789", "finished": 12})";
     std::string tournamentId = "id";
     auto response = tournamentController->UpdateTournament(tournamentRequest, tournamentId);
 

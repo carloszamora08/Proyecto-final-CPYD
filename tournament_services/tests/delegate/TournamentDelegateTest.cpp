@@ -58,7 +58,7 @@ TEST_F(TournamentDelegateTest, CreateTournamentSucessTest) {
     EXPECT_CALL(*producerMock, SendMessage("new-id", "tournament.created"))
         .Times(1);
 
-    nlohmann::json body = {{"id", "new-id"}, {"name", "new tournament"}, {"year", 2025}};
+    nlohmann::json body = {{"id", "new-id"}, {"name", "new tournament"}, {"year", 2025}, {"finished", "no"}};
     std::shared_ptr<domain::Tournament> tournament = std::make_shared<domain::Tournament>(body);
     auto response = tournamentDelegate->CreateTournament(tournament);
 
@@ -67,6 +67,7 @@ TEST_F(TournamentDelegateTest, CreateTournamentSucessTest) {
     EXPECT_EQ(capturedTournament.Id(), body.at("id").get<std::string>());
     EXPECT_EQ(capturedTournament.Name(), body.at("name").get<std::string>());
     EXPECT_EQ(capturedTournament.Year(), body.at("year").get<int>());
+    EXPECT_EQ(capturedTournament.Finished(), body.at("finished").get<std::string>());
     EXPECT_EQ(response.value(), "new-id");
 }
 
@@ -83,7 +84,7 @@ TEST_F(TournamentDelegateTest, CreateTournamentFailureTest) {
     EXPECT_CALL(*producerMock, SendMessage(::testing::_, ::testing::_))
         .Times(0);
 
-    nlohmann::json body = {{"id", "new-id"}, {"name", "new tournament"}, {"year", 2025}};
+    nlohmann::json body = {{"id", "new-id"}, {"name", "new tournament"}, {"year", 2025}, {"finished", "no"}};
     std::shared_ptr<domain::Tournament> tournament = std::make_shared<domain::Tournament>(body);
     auto response = tournamentDelegate->CreateTournament(tournament);
 
@@ -93,13 +94,14 @@ TEST_F(TournamentDelegateTest, CreateTournamentFailureTest) {
     EXPECT_EQ(capturedTournament.Id(), body.at("id").get<std::string>());
     EXPECT_EQ(capturedTournament.Name(), body.at("name").get<std::string>());
     EXPECT_EQ(capturedTournament.Year(), body.at("year").get<int>());
+    EXPECT_EQ(capturedTournament.Finished(), body.at("finished").get<std::string>());
     EXPECT_EQ(response.has_value(), false);
     EXPECT_EQ(response.error(), "Error creating tournament");
 }
 
 TEST_F(TournamentDelegateTest, GetTournamentSuccessTest) {
     const std::string tournamentId = "test-id-123";
-    nlohmann::json tournamentData = {{"id", tournamentId}, {"name", "Test Tournament"}, {"year", 2025}};
+    nlohmann::json tournamentData = {{"id", tournamentId}, {"name", "Test Tournament"}, {"year", 2025}, {"finished", "no"}};
     auto expectedTournament = std::make_shared<domain::Tournament>(tournamentData);
 
     EXPECT_CALL(*tournamentRepositoryMock, ReadById(tournamentId))
@@ -113,6 +115,7 @@ TEST_F(TournamentDelegateTest, GetTournamentSuccessTest) {
     EXPECT_EQ(response.value()->Id(), tournamentId);
     EXPECT_EQ(response.value()->Name(), "Test Tournament");
     EXPECT_EQ(response.value()->Year(), 2025);
+    EXPECT_EQ(response.value()->Finished(), "no");
 }
 
 TEST_F(TournamentDelegateTest, GetTournamentNotFoundTest) {
@@ -132,8 +135,8 @@ TEST_F(TournamentDelegateTest, GetTournamentNotFoundTest) {
 TEST_F(TournamentDelegateTest, ReadAllTournamentsSuccessTest) {
     std::vector<std::shared_ptr<domain::Tournament>> tournamentsList;
 
-    nlohmann::json tournament1Data = {{"id", "id-1"}, {"name", "Tournament 1"}, {"year", 2024}};
-    nlohmann::json tournament2Data = {{"id", "id-2"}, {"name", "Tournament 2"}, {"year", 2025}};
+    nlohmann::json tournament1Data = {{"id", "id-1"}, {"name", "Tournament 1"}, {"year", 2024}, {"finished", "no"}};
+    nlohmann::json tournament2Data = {{"id", "id-2"}, {"name", "Tournament 2"}, {"year", 2025}, {"finished", "no"}};
 
     tournamentsList.push_back(std::make_shared<domain::Tournament>(tournament1Data));
     tournamentsList.push_back(std::make_shared<domain::Tournament>(tournament2Data));
@@ -182,7 +185,7 @@ TEST_F(TournamentDelegateTest, UpdateTournamentSuccessTest) {
     EXPECT_CALL(*producerMock, SendMessage(tournamentId, "tournament.updated"))
         .Times(1);
 
-    nlohmann::json updatedData = {{"id", tournamentId}, {"name", "Updated Tournament"}, {"year", 2026}};
+    nlohmann::json updatedData = {{"id", tournamentId}, {"name", "Updated Tournament"}, {"year", 2026}, {"finished", "no"}};
     std::shared_ptr<domain::Tournament> tournament = std::make_shared<domain::Tournament>(updatedData);
     auto response = tournamentDelegate->UpdateTournament(tournamentId, tournament);
 
@@ -192,6 +195,7 @@ TEST_F(TournamentDelegateTest, UpdateTournamentSuccessTest) {
     EXPECT_EQ(capturedTournament.Id(), updatedData.at("id").get<std::string>());
     EXPECT_EQ(capturedTournament.Name(), updatedData.at("name").get<std::string>());
     EXPECT_EQ(capturedTournament.Year(), updatedData.at("year").get<int>());
+    EXPECT_EQ(capturedTournament.Finished(), updatedData.at("finished").get<std::string>());
     EXPECT_EQ(response.has_value(), true);
     EXPECT_EQ(response.value(), tournamentId);
 }
@@ -205,7 +209,7 @@ TEST_F(TournamentDelegateTest, UpdateTournamentNotFoundTest) {
     EXPECT_CALL(*producerMock, SendMessage(::testing::_, ::testing::_))
         .Times(0);
 
-    nlohmann::json updatedData = {{"id", tournamentId}, {"name", "Updated Tournament"}, {"year", 2026}};
+    nlohmann::json updatedData = {{"id", tournamentId}, {"name", "Updated Tournament"}, {"year", 2026}, {"finished", "no"}};
     std::shared_ptr<domain::Tournament> tournament = std::make_shared<domain::Tournament>(updatedData);
     auto response = tournamentDelegate->UpdateTournament(tournamentId, tournament);
 

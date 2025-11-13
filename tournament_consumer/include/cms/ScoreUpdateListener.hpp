@@ -2,26 +2,26 @@
 #define LISTENER_SCOREUPDATE_LISTENER_HPP
 
 #include "QueueMessageListener.hpp"
-#include "delegate/MatchDelegate.hpp"
+#include "delegate/MatchDelegate2.hpp"
 #include "event/ScoreUpdateEvent.hpp"
 
 class ScoreUpdateListener : public QueueMessageListener {
-    std::shared_ptr<MatchDelegate> matchDelegate;
-
-    void processMessage(const std::string& message) override;
+    std::shared_ptr<MatchDelegate2> matchDelegate2;
 
 public:
     ScoreUpdateListener(const std::shared_ptr<ConnectionManager>& connectionManager,
-                        const std::shared_ptr<MatchDelegate>& matchDelegate);
+                        const std::shared_ptr<MatchDelegate2>& matchDelegate2);
     ~ScoreUpdateListener() override;
+
+    void processMessage(const std::string& message) override;
 };
 
 inline ScoreUpdateListener::ScoreUpdateListener(
     const std::shared_ptr<ConnectionManager>& connectionManager,
-    const std::shared_ptr<MatchDelegate>& matchDelegate)
+    const std::shared_ptr<MatchDelegate2>& matchDelegate2)
     : QueueMessageListener(connectionManager),
-      matchDelegate(matchDelegate) {
-    std::println("ScoreUpdateListener created with MatchDelegate");
+      matchDelegate2(matchDelegate2) {
+    std::println("ScoreUpdateListener created with MatchDelegate2");
 }
 
 inline ScoreUpdateListener::~ScoreUpdateListener() {
@@ -40,14 +40,14 @@ inline void ScoreUpdateListener::processMessage(const std::string& message) {
         std::println("Updating score in match {} in tournament {}",
                      matchId, tournamentId);
 
-        // Verificar que matchDelegate no sea nullptr antes de usarlo
-        if (!matchDelegate) {
-            std::println("ERROR: matchDelegate is null!");
+        // Verificar que matchDelegate2 no sea nullptr antes de usarlo
+        if (!matchDelegate2) {
+            std::println("ERROR: matchDelegate2 is null!");
             return;
         }
 
         ScoreUpdateEvent scoreUpdateEvent{tournamentId, matchId};
-        matchDelegate->ProcessScoreUpdate(scoreUpdateEvent);
+        matchDelegate2->ProcessScoreUpdate(scoreUpdateEvent);
 
     } catch (const std::exception& e) {
         std::println("Error processing message: {}", e.what());
