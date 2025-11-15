@@ -31,7 +31,7 @@ private:
     bool AllRegularMatchesPlayed(const std::string& tournamentId);
     void CreateRegularPhaseMatches(const std::string& tournamentId);
     void CreatePlayoffMatches(const std::string& tournamentId);
-    bool CheckIfInPlayoffs(const std::string& tournamentId);
+    int CheckIfInPlayoffs(const std::string& tournamentId);
     void AdvancePlayoffMatch(const std::string& matchId);
 };
 
@@ -58,11 +58,14 @@ inline void MatchDelegate2::ProcessScoreUpdate(const ScoreUpdateEvent& scoreUpda
     std::println("[MatchDelegate2] Processing score update for tournament: {}", scoreUpdateEvent.tournamentId);
 
     if (AllRegularMatchesPlayed(scoreUpdateEvent.tournamentId)) {
-        if (CheckIfInPlayoffs(scoreUpdateEvent.tournamentId)) {
+        int playoffsCheck = CheckIfInPlayoffs(scoreUpdateEvent.tournamentId);
+        if (playoffsCheck == 1) {
             AdvancePlayoffMatch(scoreUpdateEvent.matchId);
-        } else {
+        } else if (playoffsCheck == 0) {
             std::println("[MatchDelegate2] Regular season is complete! Creating Wild Card playoff matches...");
             CreatePlayoffMatches(scoreUpdateEvent.tournamentId);
+        } else {
+            std::println("[MatchDelegate2] An error ocurred while checking if on playoffs...");
         }
     } else {
         std::println("[MatchDelegate2] Regular season not complete yet, waiting for more scores...");
@@ -215,9 +218,16 @@ inline void MatchDelegate2::CreatePlayoffMatches(const std::string& tournamentId
         if (result) {
             successCount++;
             playoffMatchesIds.push_back(*result);
-            playoffMatches.push_back(*matchRepository->ReadById(*result));
+            
+            auto playoffMatchReadResult = matchRepository->ReadById(*result);
+            if (!playoffMatchReadResult) {
+                std::println("[MatchDelegate2] ERROR reading match: {}", playoffMatchReadResult.error());
+                return;
+            }
+            playoffMatches.push_back(*playoffMatchReadResult);
         } else {
             std::println("[MatchDelegate2] ERROR creating match: {}", result.error());
+            return;
         }
     }
 
@@ -241,36 +251,40 @@ inline void MatchDelegate2::CreatePlayoffMatches(const std::string& tournamentId
 
     // Actualizar equipos
     for (auto& playoffMatch : playoffMatches) {
-        matchRepository->Update(playoffMatch->Id(), *playoffMatch);
+        auto matchFinalUpdateResult = matchRepository->Update(playoffMatch->Id(), *playoffMatch);
+        if (!matchFinalUpdateResult) {
+            std::println("[MatchDelegate2] ERROR finally updating match: {}", matchFinalUpdateResult.error());
+            return;
+        }
     }
 
     std::println("[MatchDelegate2] SUCCESS: Created {}/{} playoff matches for tournament {}",
                  successCount, matches.size(), tournamentId);
 }
 
-inline bool MatchDelegate2::CheckIfInPlayoffs(const std::string& tournamentId) {
+inline int MatchDelegate2::CheckIfInPlayoffs(const std::string& tournamentId) {
     std::println("[MatchDelegate2] Checking if tournament {} has entered playoffs", tournamentId);
 
     auto tournamentResult = tournamentRepository->ReadById(tournamentId);
     if (!tournamentResult) {
         std::println("[MatchDelegate2] ERROR: Cannot get tournament: {}", tournamentResult.error());
-        return false;
+        return -1;
     }
     auto tournament = *tournamentResult;
 
     auto matchesResult = matchRepository->FindByTournamentIdAndRound(tournamentId, domain::RoundType::WILDCARD);
     if (!matchesResult) {
         std::println("[MatchDelegate2] ERROR: Cannot get matches: {}", matchesResult.error());
-        return false;
+        return -1;
     }
     auto matches = *matchesResult;
 
     if (matches.size() == 0) {
         std::println("[MatchDelegate2] Tournmanet {} is still in regular season", tournamentId);
-        return false;
+        return 0;
     } else {
         std::println("[MatchDelegate2] Tournmanet {} is in playoffs", tournamentId);
-        return true;
+        return 1;
     }
 }
 
