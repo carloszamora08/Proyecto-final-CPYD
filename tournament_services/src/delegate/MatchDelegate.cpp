@@ -122,14 +122,11 @@ MatchDelegate::UpdateMatchScore(std::string_view tournamentId,
     messageProducer->SendMessage(event.dump(), "match.score-updated");
 
     if (match->Round() == domain::RoundType::SUPERBOWL) {
-        auto tournamentResult2 = tournamentRepository->ReadById(tournamentId.data());
-        if (!tournamentResult2) {
-            return std::unexpected(tournamentResult2.error());
+        tournament->Finished() = "yes";
+        auto tournamentUpdateResult = tournamentRepository->Update(tournament->Id(), *tournament);
+        if (!tournamentUpdateResult) {
+            return std::unexpected(tournamentUpdateResult.error());
         }
-        auto tournament2 = *tournamentResult2;
-
-        tournament2->Finished() = "yes";
-        tournamentRepository->Update(tournament2->Id(), *tournament2);
     }
 
     return {};
@@ -138,22 +135,11 @@ MatchDelegate::UpdateMatchScore(std::string_view tournamentId,
 bool MatchDelegate::ValidateScore(const domain::Score& score,
                                   const domain::Tournament& tournament,
                                   domain::RoundType round) {
-    auto strategy = GetStrategy(tournament.Format().Type());
+    auto strategy = strategies["NFL"];
+
     if (!strategy) {
         return false;
     }
 
     return strategy->ValidateScore(score, round);
-}
-
-std::shared_ptr<IMatchStrategy> MatchDelegate::GetStrategy(
-    const domain::TournamentType& tournamentType) {  // Recibir TournamentType
-
-    // Usar switch en lugar de map
-    switch (tournamentType) {
-        case domain::TournamentType::NFL:
-            return strategies["NFL"];
-        default:
-            return nullptr;
-    }
 }

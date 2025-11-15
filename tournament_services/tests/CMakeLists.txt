@@ -8,6 +8,8 @@ set(TEST_SOURCES
         delegate/TournamentDelegateTest.cpp
         delegate/TeamDelegateTest.cpp
         delegate/GroupDelegateTest.cpp
+        delegate/MatchDelegateTest.cpp
+        delegate/MatchDelegate2Test.cpp
         cms/GroupAddTeamListenerTest.cpp
         cms/ScoreUpdateListenerTest.cpp
         ../src/controller/TeamController.cpp
@@ -17,6 +19,8 @@ set(TEST_SOURCES
         ../src/delegate/TournamentDelegate.cpp
         ../src/delegate/TeamDelegate.cpp
         ../include/delegate/GroupDelegate.hpp
+        ../include/delegate/MatchDelegate.hpp
+        ../../tournament_consumer/include/delegate/MatchDelegate2.hpp
         ../../tournament_common/include/domain/NFLStrategy.hpp
         ../../tournament_common/src/persistence/repository/MatchRepository.cpp
         ../../tournament_consumer/include/cms/MatchCreationListener.hpp

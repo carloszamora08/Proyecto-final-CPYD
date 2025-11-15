@@ -43,8 +43,6 @@ private:
                       const domain::Tournament& tournament,
                       domain::RoundType round);
 
-    // GetStrategy ahora recibe TournamentType
-    std::shared_ptr<IMatchStrategy> GetStrategy(const domain::TournamentType& tournamentType);
 };
 
 #endif // TOURNAMENTS_MATCHDELEGATE_HPP
