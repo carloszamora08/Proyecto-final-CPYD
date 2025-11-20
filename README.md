@@ -16,6 +16,9 @@ podman build -f tournament_services/Containerfile -t tournament_services
 podman run --replace -d --network dev --name tournament_services_1 -m 256m tournament_services
 podman run --replace -d --network dev --name tournament_services_2 -m 256m tournament_services
 podman run --replace -d --network dev --name tournament_services_3 -m 256m tournament_services
+podman run --replace -d --network dev --name tournament_consumer_1 -m 256m tournament_consumer
+podman run --replace -d --network dev --name tournament_consumer_2 -m 256m tournament_consumer
+podman run --replace -d --network dev --name tournament_consumer_3 -m 256m tournament_consumer
 
 podman run -d --replace --name load_balancer --network dev -p 8000:8080 -p 8404:8404 -v ./tournament_services/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:Z haproxy
 ````
