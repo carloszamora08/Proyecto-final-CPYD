@@ -27,7 +27,9 @@ class TournamentUser(HttpUser):
         return team_ids
     def create_tournament(self):
         tournament_data = {
-            "name": f"Tournament - {uuid.uuid4()}"
+            "name": f"Tournament - {uuid.uuid4()}",
+            "year": 2025,
+            "finished": "no"
         }
         with self.client.post(
                 "/tournaments",
@@ -41,9 +43,11 @@ class TournamentUser(HttpUser):
             else:
                 response.failure(f"Tournament creation failed: {response.status_code}")
 
-    def create_group(self, tournament_id: Any | None):
+    def create_group(self, tournament_id: Any | None, conference):
         group_data = {
-            "name": f"Group - {uuid.uuid4()}"
+            "name": f"Group - {uuid.uuid4()}",
+            "region": f"Region - {uuid.uuid4()}",
+            "conference": f"{conference}"
         }
         with self.client.post(
                 f"/tournaments/{tournament_id}/groups",
@@ -57,19 +61,77 @@ class TournamentUser(HttpUser):
             else:
                 response.failure(f"Group creation failed: {response.status_code}")
 
+    def get_tournament(tournament_id: Any | None):
+        with self.client.get(
+                f"/tournaments/{tournament_id}",
+                catch_response=True,
+                name=f"GET /tournaments/{tournament_id}"
+        ) as response:
+            if response.status_code == 200 or response.status_code == 201:
+                # Tournament finished flag
+                return response.body.get("finished")
+            else:
+                response.failure(f"Group creation failed: {response.status_code}")
+
+    def get_pending_matches(tournament_id: Any | None):
+        with self.client.get(
+                f"/tournaments/{tournament_id}/matches?showMatches=pending",
+                catch_response=True,
+                name=f"GET /tournaments/{tournament_id}/matches?showMatches=pending"
+        ) as response:
+            if response.status_code == 200 or response.status_code == 201:
+                # All pending matches
+                return response.body
+            else:
+                response.failure(f"Group creation failed: {response.status_code}")
+
+    def update_match_score(tournament_id: Any | None, match_id: Any | None)
+        with self.client.patch(
+                f"/tournaments/{tournament_id}/matches/{match_id}",
+                catch_response=True,
+                name=f"GET /tournaments/{tournament_id}/matches/{match_id}"
+        ) as response:
+            if response.status_code == 200 or response.status_code == 201:
+                # All pending matches
+                return
+            else:
+                response.failure(f"Group creation failed: {response.status_code}")
+
     @task
     def get_teams(self):
         #self.client.get("/teams")
         team_ids = self.create_teams()
         tournament_id = self.create_tournament()
-        group_id = self.create_group(tournament_id)
+        group_ids = list()
+        group_ids.append(self.create_group(tournament_id, "AFC"))
+        group_ids.append(self.create_group(tournament_id, "AFC"))
+        group_ids.append(self.create_group(tournament_id, "AFC"))
+        group_ids.append(self.create_group(tournament_id, "AFC"))
+        group_ids.append(self.create_group(tournament_id, "NFC"))
+        group_ids.append(self.create_group(tournament_id, "NFC"))
+        group_ids.append(self.create_group(tournament_id, "NFC"))
+        group_ids.append(self.create_group(tournament_id, "NFC"))
+
+        groupCounter = 0
         for team_id in team_ids:
             team_data = [{
                 "id": f"{team_id}"
             }]
             self.client.patch(
-                    f"/tournaments/{tournament_id}/groups/{group_id}/teams",
+                    f"/tournaments/{tournament_id}/groups/{group_ids[groupCounter % 4]}/teams",
                     json=team_data,
                     catch_response=True,
-                    name=f"POST /tournaments/{tournament_id}/groups/{group_id}/teams"
+                    name=f"POST /tournaments/{tournament_id}/groups/{group_ids[groupCounter % 4]}/teams"
             )
+            groupCounter += 1
+            if (groupCounter == 32):
+                groupCounter = 0
+
+        isTournamentDone = false
+        while (isTournamentDone == false):
+            pendingMatches = get_pending_matches(tournament_id)
+
+            for pendingMatch in pendingMatches:
+                update_match_score(tournament_id, pendingMatch.get("id"))
+
+            isTournamentDone = get_tournament(tournament_id) == "yes"
