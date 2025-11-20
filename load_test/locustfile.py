@@ -8,7 +8,7 @@ class TournamentUser(HttpUser):
 
     def create_teams(self):
         team_ids = list()
-        for i in range(33):
+        for i in range(32):
             team_data = {
                 "name": f"Team {uuid.uuid4()}"
             }
@@ -61,7 +61,7 @@ class TournamentUser(HttpUser):
             else:
                 response.failure(f"Group creation failed: {response.status_code}")
 
-    def get_tournament(tournament_id: Any | None):
+    def get_tournament(self, tournament_id: Any | None):
         with self.client.get(
                 f"/tournaments/{tournament_id}",
                 catch_response=True,
@@ -69,11 +69,11 @@ class TournamentUser(HttpUser):
         ) as response:
             if response.status_code == 200 or response.status_code == 201:
                 # Tournament finished flag
-                return response.body.get("finished")
+                return response.json().get("finished")
             else:
-                response.failure(f"Group creation failed: {response.status_code}")
+                response.failure(f"Tournament selection failed: {response.status_code}")
 
-    def get_pending_matches(tournament_id: Any | None):
+    def get_pending_matches(self, tournament_id: Any | None):
         with self.client.get(
                 f"/tournaments/{tournament_id}/matches?showMatches=pending",
                 catch_response=True,
@@ -81,21 +81,29 @@ class TournamentUser(HttpUser):
         ) as response:
             if response.status_code == 200 or response.status_code == 201:
                 # All pending matches
-                return response.body
+                return response.json()
             else:
-                response.failure(f"Group creation failed: {response.status_code}")
+                response.failure(f"Pending match selection failed: {response.status_code}")
+                return []
 
-    def update_match_score(tournament_id: Any | None, match_id: Any | None)
+    def update_match_score(self, tournament_id: Any | None, match_id: Any | None):
+        score_data = {
+            "score": {
+                "home": 6,
+                "visitor": 7
+            }
+        }
         with self.client.patch(
                 f"/tournaments/{tournament_id}/matches/{match_id}",
+                json=score_data,
                 catch_response=True,
-                name=f"GET /tournaments/{tournament_id}/matches/{match_id}"
+                name=f"PATCH /tournaments/{tournament_id}/matches/{match_id}"
         ) as response:
-            if response.status_code == 200 or response.status_code == 201:
+            if response.status_code == 204:
                 # All pending matches
                 return
             else:
-                response.failure(f"Group creation failed: {response.status_code}")
+                response.failure(f"Score update failed: {response.status_code}")
 
     @task
     def get_teams(self):
@@ -118,20 +126,22 @@ class TournamentUser(HttpUser):
                 "id": f"{team_id}"
             }]
             self.client.patch(
-                    f"/tournaments/{tournament_id}/groups/{group_ids[groupCounter % 4]}/teams",
+                    f"/tournaments/{tournament_id}/groups/{group_ids[groupCounter % 8]}/teams",
                     json=team_data,
                     catch_response=True,
-                    name=f"POST /tournaments/{tournament_id}/groups/{group_ids[groupCounter % 4]}/teams"
+                    name=f"POST /tournaments/{tournament_id}/groups/{group_ids[groupCounter % 8]}/teams"
             )
             groupCounter += 1
             if (groupCounter == 32):
                 groupCounter = 0
 
-        isTournamentDone = false
-        while (isTournamentDone == false):
-            pendingMatches = get_pending_matches(tournament_id)
+        isTournamentDone = False
+        while (isTournamentDone == False):
+            pendingMatches = self.get_pending_matches(tournament_id)
 
             for pendingMatch in pendingMatches:
-                update_match_score(tournament_id, pendingMatch.get("id"))
+                if (pendingMatch.get("home").get("id") != "" and pendingMatch.get("visitor").get("id") != ""):
+                    self.update_match_score(tournament_id, pendingMatch.get("id"))
 
-            isTournamentDone = get_tournament(tournament_id) == "yes"
+            isTournamentDone = self.get_tournament(tournament_id) == "yes"
+    
